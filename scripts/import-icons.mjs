@@ -16,12 +16,18 @@
 // Der Abgleich ist tolerant: Groß-/Kleinschreibung, Bindestriche/Unterstriche und
 // die Dateiendung (png/webp/gif/jpg) werden ignoriert. Geschrieben wird immer auf
 // den exakten Zielnamen aus dem Katalog-Seed, damit das Overlay die Datei findet.
+//
+// Heruntergeladene PNGs werden auf den sichtbaren Inhalt zugeschnitten (siehe
+// lib/png-crop.mjs) — damit sehen Icons unabhängig von der Quelle im Overlay
+// gleich groß aus, und ein lokal gebautes Windows-Bundle enthält dieselben
+// Dateien wie eins aus der CI.
 
 import { readFile, writeFile, readdir, copyFile, mkdir, stat } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { dirname, join, extname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { items as CATALOG_ITEMS } from '../server/catalog-seed.js';
+import { cropTransparentBorder } from './lib/png-crop.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -169,7 +175,11 @@ async function runDownload(expected, manifestFile) {
             'User-Agent':
               'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
               '(KHTML, like Gecko) Chrome/120.0 Safari/537.36',
-            'Accept': 'image/avif,image/webp,image/png,image/*,*/*;q=0.8',
+            // Bewusst OHNE image/avif und image/webp: manche CDNs (z. B. Shopify)
+            // liefern sonst AVIF unter dem Dateinamen *.png. Das Overlay lädt die
+            // Datei zwar, aber die Browserquelle in OBS ist je nach Version älter
+            // als die AVIF-Unterstützung — dann bliebe das Icon leer.
+            'Accept': 'image/png,image/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.9',
           },
           redirect: 'follow',
@@ -180,9 +190,14 @@ async function runDownload(expected, manifestFile) {
           throw new Error(`kein Bild (Content-Type: ${type})`);
         }
         const buf = Buffer.from(await res.arrayBuffer());
-        await writeFile(join(TARGET_DIR, targetName), buf);
+        // Transparenten Rand abschneiden: die Quellen lassen unterschiedlich viel
+        // Luft ums Item, und das Overlay zeichnet in einen festen 28-px-Kasten —
+        // ohne Zuschnitt wirken gleich große Items unterschiedlich groß. Ist das
+        // Bild kein zuschneidbares PNG, kommt es unverändert zurück.
+        const cut = cropTransparentBorder(buf);
+        await writeFile(join(TARGET_DIR, targetName), cut.buffer);
         ok.push(targetName);
-        console.log(`    ✓ ${targetName}`);
+        console.log(`    ✓ ${targetName}${cut.cropped ? `  (zugeschnitten auf ${cut.width}×${cut.height})` : ''}`);
       } catch (err) {
         failed.push({ targetName, msg: err.message });
         console.log(`    ✗ ${targetName}  (${err.message})`);

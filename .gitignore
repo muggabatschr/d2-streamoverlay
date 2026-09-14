@@ -5,12 +5,16 @@ server/data/*.bak
 server/data/state.db
 server/data/state.db-wal
 server/data/state.db-shm
-icons.urls.json
 *.log
 .DS_Store
 .idea/
 
+# Build-Artefakte der Windows-Variante (Bundle-Ordner, node.exe-Cache, Setup).
+build/
+
 # Item-Icons: D2R-Grafiken sind Blizzards Eigentum und werden nicht mitgeliefert.
+# icons.urls.json ist bewusst NICHT ignoriert: darin stehen nur Links, keine
+# Grafiken — die CI laedt die Bilder damit zur Bauzeit (scripts/bundle-win.mjs).
 # Siehe README ("Item-Icons") — Dateinamen stammen aus server/catalog-seed.js.
 # Ausnahmen: die Anleitung und der selbst gezeichnete SVG-Platzhalter.
 public/assets/items/*
