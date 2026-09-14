@@ -29,7 +29,7 @@ Echtzeit synchronisiert**.
 
 ## Installation
 
-Voraussetzung: **Node.js ≥ 18**.
+Voraussetzung: **Node.js ≥ 22.13** (für den eingebauten SQLite-Treiber `node:sqlite`).
 
 ```bash
 npm install
@@ -42,6 +42,45 @@ Danach läuft der Server auf `http://localhost:3777`:
 - **Overlay (für OBS):** http://localhost:3777/overlay.html
 
 Der Port lässt sich per Umgebungsvariable ändern: `PORT=4000 npm start`.
+
+## Windows-Version fürs Verschenken
+
+Für jemanden, der weder Node installieren kann noch soll, gibt es ein **Windows-Setup**:
+Doppelklick auf `Setup-D2-Overlay-<version>.exe`, dann Startmenü → *D2 Stream-Overlay*.
+Der Browser öffnet sich von selbst mit dem Steuerpanel. Node ist mit im Paket, es muss
+nichts weiter installiert werden.
+
+Was der Beschenkte danach noch einmalig tut: die Browserquelle in OBS anlegen. Dafür
+liegt eine Anleitung bei (Startmenü → *Anleitung*, bzw. `windows\LIESMICH.txt`).
+
+| | |
+| --- | --- |
+| Installiert nach | `C:\Program Files\D2-Overlay` (ohne Adminrechte: Nutzerordner) |
+| Daten | `%APPDATA%\D2-Overlay` — bleiben bei Update und Deinstallation erhalten |
+| Beenden | Startmenü → *D2 Stream-Overlay beenden* |
+| Bei Problemen | `windows\Start.bat` startet mit sichtbarer Konsole und zeigt Fehler |
+
+Beim ersten Start meldet sich Windows zweimal: **SmartScreen** („Unbekannter Herausgeber",
+weil das Setup nicht signiert ist → *Weitere Informationen* → *Trotzdem ausführen*) und
+eventuell die **Firewall** für Port 3777 (nur lokal, freigeben).
+
+### Setup bauen
+
+```bash
+node scripts/bundle-win.mjs      # Bundle nach build/win (node.exe wird geladen)
+iscc windows\installer.iss       # daraus das Setup — nur unter Windows
+```
+
+Der Bundle-Schritt läuft auf **jedem** Betriebssystem, weil das Projekt seit dem Wechsel
+auf `node:sqlite` kein nativ kompiliertes Modul mehr enthält. Nur der Inno-Setup-Compiler
+ist Windows-only — deshalb gibt es den Workflow **Actions → Windows-Installer → Run
+workflow**, der das Setup baut und als Artefakt anhängt.
+
+> **Warum Artefakt und kein Release?** Das Setup enthält die Item-Grafiken, und die
+> gehören Blizzard. Als Build-Artefakt kommt nur an die Datei, wer Zugriff aufs Repo hat.
+> Im Repo selbst liegen weiterhin **nur die Links** (`icons.urls.json`) — der Bundle-Schritt
+> lädt die Bilder zur Bauzeit nach, lokal nimmt er stattdessen deine vorhandenen aus
+> `public/assets/items/`.
 
 ## In Streamlabs OBS / OBS einbinden
 
@@ -298,9 +337,10 @@ geht damit nicht verloren.
   Zuschauer ja ebenfalls weiter. War er währenddessen abgelaufen, steht er beim
   Start auf „Zeit abgelaufen".
 
-> Voraussetzung: `npm install` installiert `better-sqlite3` (liefert für gängige
-> Plattformen vorgebaute Binärdateien; nur bei seltenem Fallback wird kompiliert —
-> dann werden Build-Tools wie die Xcode Command Line Tools benötigt).
+> Der SQLite-Treiber kommt aus Node selbst (`node:sqlite`, ab Node 22.13 ohne
+> Flag). Das Projekt hat damit **kein nativ kompiliertes Modul** mehr — `npm
+> install` braucht keine Build-Tools, und das Windows-Bundle lässt sich auf jedem
+> Betriebssystem zusammenstellen (siehe [Windows-Version](#windows-version-fürs-verschenken)).
 
 ## Schriftart
 
@@ -360,9 +400,11 @@ Spieldaten-Übersetzungen stehen im Katalog-Seed `server/catalog-seed.js` (siehe
 
 ```
 d2-streamoverlay/
-├── server/            # Node-Server (Express + ws), SQLite (db.js)
+├── server/            # Node-Server (Express + ws), SQLite via node:sqlite (db.js)
 │   └── catalog-seed.js # Stammdaten (Items/Targets/Zonen, mehrsprachig) -> SQLite
 ├── public/            # Overlay, Steuerpanel, geteilter WS-Client (+ i18n.js), Assets
+├── windows/           # Windows-Auslieferung: Launcher, Starter, Setup-Skript, Anleitung
+├── scripts/           # Hilfsskripte (Icon-Import, Windows-Bundle)
 └── README.md
 ```
 

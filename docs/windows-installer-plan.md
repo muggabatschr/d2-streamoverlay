@@ -1,7 +1,9 @@
 # Windows-Variante (Self-Contained Installer) für d2-streamoverlay
 
-> **Status:** geplant, noch nicht umgesetzt. Dieses Dokument hält den abgestimmten
-> Ansatz fest, damit die Umsetzung später ohne erneute Klärung fortgesetzt werden kann.
+> **Status: umgesetzt.** Dieses Dokument hält den ursprünglich abgestimmten Ansatz
+> fest. Beim Bauen haben sich zwei Dinge geändert — siehe „Abweichungen von diesem
+> Plan" am Ende. Die Bedienungsanleitung steht im README unter
+> *[Windows-Version fürs Verschenken](../README.md#windows-version-fürs-verschenken)*.
 
 ## Kontext
 
@@ -126,3 +128,31 @@ D2EMU-Terror-Zone-Env-Variablen.
   und das portable Download pinnen.
 - **better-sqlite3 Prebuild fehlt** für gewählte Node-Major → ggf. auf jüngere LTS ausweichen
   oder `npm rebuild` auf dem Runner (MSVC ist auf `windows-latest` vorhanden).
+
+
+## Abweichungen von diesem Plan (bei der Umsetzung entschieden)
+
+1. **Kein `better-sqlite3` mehr.** Statt die ABI-Kopplung zwischen mitgelieferter
+   `node.exe` und nativem Modul sorgfältig zu pflegen (Risiko 1 und 2 unten), wurde
+   der Treiber auf das in Node eingebaute **`node:sqlite`** umgestellt — betroffen war
+   nur `server/db.js` (Öffnen, drei PRAGMAs, zwei Transaktionen). Damit entfallen
+   beide Risiken ersatzlos: das Projekt hat kein nativ kompiliertes Modul mehr,
+   `node_modules` schrumpfte von 18 MB auf 4 MB, und der Bundle-Schritt läuft auf
+   jedem Betriebssystem. Windows braucht es nur noch für den Inno-Setup-Compiler.
+
+2. **Item-Icons kommen zur Bauzeit aus `icons.urls.json`.** Der Plan ließ offen, wie
+   die Grafiken in den Bundle kommen — `public/assets/items/` ist nicht eingecheckt.
+   Lösung: `scripts/bundle-win.mjs` nimmt lokal vorhandene Icons, lädt sie sonst aus
+   der (jetzt eingecheckten) URL-Liste nach. Im öffentlichen Repo liegen damit nur
+   Links, keine Grafiken. Das fertige Setup geht als **Build-Artefakt** heraus, nicht
+   als öffentliches Release.
+
+3. **Staging als eigenes Skript statt YAML-Schritten.** `scripts/bundle-win.mjs` baut
+   den Bundle-Ordner; die CI ruft nur dieses Skript auf. Dadurch ist derselbe Bundle
+   lokal reproduzierbar (`npm run bundle:win`), ohne die CI anzuwerfen.
+
+4. **Zusätzlich zum Plan:** `windows/stop.vbs` samt Startmenü-Eintrag zum Beenden (der
+   Server läuft sonst unsichtbar weiter) und `windows/LIESMICH.txt` mit der
+   OBS-Einrichtung — ohne die steht ein unbedarfter Nutzer vor laufendem Server und
+   leerem OBS. Der Deinstaller ruft `stop.vbs` vorab auf, sonst blockiert die laufende
+   `node.exe` das Löschen des Programmordners.

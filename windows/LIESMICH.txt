@@ -1,0 +1,91 @@
+D2 STREAM-OVERLAY - ANLEITUNG
+================================
+
+Was ist das?
+------------
+Ein Overlay fuer Diablo II: Resurrected, das du in OBS bzw. Streamlabs OBS
+einblendest: aktuelles Farm-Ziel, Run-Zaehler, gefundene Items, Terror Zone
+und ein Wettbewerb-Timer.
+
+Bedient wird es ueber ein Steuerpanel im Browser - am besten auf einem
+zweiten Monitor oder auf dem Handy.
+
+
+1. Starten
+----------
+Startmenue -> "D2 Stream-Overlay".
+
+Es oeffnet sich automatisch das Steuerpanel im Browser. Solange das Overlay
+laeuft, muss dieser Startvorgang nicht wiederholt werden.
+
+Beim allerersten Start kann Windows zwei Dinge fragen:
+
+  * "Der Computer wurde durch Windows geschuetzt" -> auf "Weitere
+    Informationen" klicken, dann "Trotzdem ausfuehren". Das erscheint bei
+    jedem Programm ohne gekaufte Herausgeber-Signatur.
+
+  * Windows-Firewall -> "Zugriff zulassen". Das Programm spricht nur mit
+    deinem eigenen Rechner, nicht mit dem Internet.
+
+
+2. In OBS einblenden  (einmalig einrichten)
+-------------------------------------------
+ 1. In OBS unten bei "Quellen" auf das Plus (+) klicken.
+ 2. "Browser" auswaehlen, Namen vergeben (z. B. "D2 Overlay"), OK.
+ 3. Bei "URL" GENAU das hier eintragen:
+
+        http://localhost:3777/overlay.html
+
+ 4. Breite 420, Hoehe 1080 eintragen (passt fuer die linke Bildschirmseite).
+ 5. OK klicken. Das Overlay erscheint in der Vorschau und laesst sich dort
+    mit der Maus verschieben und in der Groesse ziehen.
+
+Der Hintergrund ist durchsichtig - das Spiel bleibt also sichtbar.
+
+
+3. Bedienen
+-----------
+Das Steuerpanel liegt unter:
+
+        http://localhost:3777/control.html
+
+Dort waehlst du das Farm-Ziel, zaehlst Runs hoch und traegst Funde ein.
+Alles erscheint sofort im Overlay. Am Handy: dieselbe Adresse, aber statt
+"localhost" die IP deines PCs eintragen (beide im selben WLAN).
+
+
+4. Beenden
+----------
+Startmenue -> "D2 Stream-Overlay beenden".
+
+
+5. Wo liegen meine Daten?
+-------------------------
+        %APPDATA%\D2-Overlay
+
+(In den Explorer-Adresszeile einfuegen und Enter druecken.)
+
+Runs, Funde und Einstellungen bleiben dort erhalten - auch wenn du das
+Programm deinstallierst oder eine neuere Version installierst.
+
+
+6. Wenn etwas nicht geht
+------------------------
+* Overlay bleibt in OBS schwarz/leer
+  -> Laeuft das Programm? Startmenue -> "D2 Stream-Overlay" nochmal starten.
+  -> In OBS Rechtsklick auf die Quelle -> "Aktualisieren".
+
+* "Diese Seite kann nicht erreicht werden" im Browser
+  -> Das Programm laeuft nicht. Ueber das Startmenue starten.
+
+* Gar nichts passiert beim Start
+  -> Im Installationsordner "windows\Start.bat" doppelklicken. Dann laeuft
+     es mit sichtbarem Fenster und zeigt die Fehlermeldung an.
+
+* Port 3777 ist belegt
+  -> Selten. Dann meldet das Fenster aus Start.bat "EADDRINUSE".
+
+
+Die Item-Grafiken stammen von Blizzard und sind nur zur Anzeige eingebunden.
+Fehlt ein Bild, zeigt das Overlay einen farbigen Platzhalter - es
+funktioniert also trotzdem.

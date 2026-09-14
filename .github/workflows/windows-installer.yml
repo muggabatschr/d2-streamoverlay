@@ -1,0 +1,75 @@
+# Baut das Windows-Setup (Setup-D2-Overlay-<version>.exe).
+name: Windows-Installer
+
+# Manuell auslösbar (Actions -> Windows-Installer -> Run workflow) und automatisch
+# bei einem Versions-Tag.
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    # Windows nur noch für den Inno-Setup-Compiler nötig: seit der Umstellung auf
+    # node:sqlite hat das Projekt kein nativ kompiliertes Modul mehr, der Bundle
+    # selbst liesse sich überall zusammenstellen.
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Muss node:sqlite ohne Flag können und zur in scripts/bundle-win.mjs
+          # gepinnten node.exe passen.
+          node-version: '24'
+
+      - name: Abhängigkeiten installieren (nur Laufzeit)
+        run: npm ci --omit=dev
+
+      - name: Version aus package.json lesen
+        id: meta
+        shell: bash
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      # Die Item-Grafiken sind bewusst NICHT eingecheckt (Blizzards Eigentum,
+      # öffentliches Repo). bundle-win.mjs lädt sie aus icons.urls.json nach.
+      - name: Bundle zusammenstellen (inkl. node.exe und Item-Icons)
+        run: node scripts/bundle-win.mjs build/win
+
+      - name: Bundle prüfen
+        shell: bash
+        run: |
+          set -e
+          test -f build/win/node.exe            || { echo "node.exe fehlt";     exit 1; }
+          test -f build/win/server/index.js     || { echo "Server fehlt";       exit 1; }
+          test -f build/win/public/overlay.html || { echo "Overlay fehlt";      exit 1; }
+          test -f build/win/windows/start.vbs   || { echo "Starter fehlt";      exit 1; }
+          icons=$(ls build/win/public/assets/items/*.png 2>/dev/null | wc -l)
+          echo "Item-Icons im Bundle: $icons"
+          [ "$icons" -ge 100 ] || echo "WARNUNG: auffällig wenige Icons — Quellen erreichbar?"
+
+      - name: Inno Setup installieren
+        run: choco install innosetup --no-progress -y
+
+      - name: Setup kompilieren
+        run: >-
+          & "$env:ProgramFiles(x86)\Inno Setup 6\ISCC.exe"
+          /DMyAppVersion=${{ steps.meta.outputs.version }}
+          /DBundleDir=..\build\win
+          windows\installer.iss
+
+      # Als Build-Artefakt, NICHT als öffentliches Release: das Setup enthält die
+      # Item-Grafiken, und die sollen nicht über GitHub verteilt werden. Das
+      # Artefakt kann nur herunterladen, wer Zugriff auf das Repo hat.
+      - name: Setup als Artefakt hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: Setup-D2-Overlay-${{ steps.meta.outputs.version }}
+          path: build/Setup-D2-Overlay-*.exe
+          if-no-files-found: error
+          retention-days: 30
