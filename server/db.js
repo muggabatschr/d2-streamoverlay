@@ -1,14 +1,20 @@
-// SQLite-Persistenz (better-sqlite3, synchron). Kapselt das gesamte SQL und ist
-// die einzige Stelle mit Datenbankzugriff. Der Server hält weiterhin EINEN
-// In-Memory-State (siehe state.js); db.js spiegelt ihn nach jeder Aktion in eine
-// relationale Datenbank.
+// SQLite-Persistenz über das in Node eingebaute `node:sqlite` (synchron). Kapselt
+// das gesamte SQL und ist die einzige Stelle mit Datenbankzugriff. Der Server hält
+// weiterhin EINEN In-Memory-State (siehe state.js); db.js spiegelt ihn nach jeder
+// Aktion in eine relationale Datenbank.
 //
-// Warum write-through statt debounced Datei-Speichern: better-sqlite3 schreibt
+// Warum write-through statt debounced Datei-Speichern: DatabaseSync schreibt
 // synchron, jede Transaktion ist nach dem Commit sofort dauerhaft (WAL-Modus).
 // Damit geht auch die letzte Aktion vor einem harten Beenden (Strg+C) nicht mehr
 // verloren — anders als beim früheren 300-ms-Debounce.
+//
+// Warum node:sqlite statt better-sqlite3: Letzteres ist ein nativ kompiliertes
+// Modul und müsste für jede Node-Version und Plattform passend gebaut werden. Das
+// machte die Windows-Auslieferung (siehe windows/) fragil — die mitgelieferte
+// node.exe musste exakt zur Build-ABI passen. Der eingebaute Treiber hat dieselbe
+// synchrone API-Form und macht das Bundle plattformunabhängig zusammenstellbar.
 
-import Database from 'better-sqlite3';
+import { DatabaseSync } from 'node:sqlite';
 import { existsSync, mkdirSync, renameSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -31,15 +37,39 @@ let db = null;
 // Vorbereitete Statements (einmalig in openDb gesetzt).
 let stmt = null;
 
+// Ersatz für das transaction()-Helferlein aus better-sqlite3: verpackt fn in
+// BEGIN/COMMIT und rollt bei einem Fehler zurück. Gibt — wie das Original — eine
+// Funktion zurück, die Argumente und Rückgabewert durchreicht. Verschachtelung
+// kommt hier nicht vor (persistTxn und seedTxn laufen nie ineinander), deshalb
+// keine Savepoints.
+function transaction(fn) {
+  return (...args) => {
+    db.exec('BEGIN');
+    try {
+      const result = fn(...args);
+      db.exec('COMMIT');
+      return result;
+    } catch (err) {
+      try {
+        db.exec('ROLLBACK');
+      } catch {
+        /* z. B. wenn SQLite die Transaktion bereits selbst abgebrochen hat */
+      }
+      throw err;
+    }
+  };
+}
+
 // Öffnet/erzeugt die Datenbank, setzt PRAGMAs und legt das Schema an. Idempotent.
 export function openDb() {
   mkdirSync(DATA_DIR, { recursive: true });
-  db = new Database(DB_FILE);
+  db = new DatabaseSync(DB_FILE);
   // WAL + synchronous NORMAL: committete Transaktionen überleben Prozess-Crash/
   // Strg+C. (FULL wäre noch strenger gegen OS-/Stromausfall, hier nicht nötig.)
-  db.pragma('journal_mode = WAL');
-  db.pragma('synchronous = NORMAL');
-  db.pragma('foreign_keys = ON');
+  // node:sqlite hat kein pragma()-Helferlein — die PRAGMAs laufen als SQL.
+  db.exec('PRAGMA journal_mode = WAL');
+  db.exec('PRAGMA synchronous = NORMAL');
+  db.exec('PRAGMA foreign_keys = ON');
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS meta (
@@ -211,7 +241,7 @@ export function openDb() {
   setMetaValue('schema_version', SCHEMA_VERSION);
 
   // Die eigentliche Schreib-Transaktion (synchron, atomar).
-  persistTxn = db.transaction((persisted) => {
+  persistTxn = transaction((persisted) => {
     setMetaValue('activeTargetId', persisted.activeTargetId ?? null);
     // activeSince wird gespeichert, beim Laden aber stets überschrieben
     // (state.js setzt den Timer-Anker beim Start neu) — siehe loadState.
@@ -254,7 +284,7 @@ export function openDb() {
   // Katalog-Seeding (Stammdaten neu einspielen). Wendet die type-Regel an:
   // type als String -> verbatim auf items.type (rune/runeword, nicht übersetzt);
   // type als Objekt -> je Sprache nach item_i18n.type (unique/set Slot-Label).
-  seedTxn = db.transaction((seed) => {
+  seedTxn = transaction((seed) => {
     stmt.delItemsCat.run();
     stmt.delTargetsCat.run();
     stmt.delZonesCat.run();

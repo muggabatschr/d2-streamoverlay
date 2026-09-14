@@ -6,14 +6,14 @@
   "scripts": {
     "start": "node server/index.js",
     "icons:check": "node scripts/import-icons.mjs",
-    "icons:import": "node scripts/import-icons.mjs"
+    "icons:import": "node scripts/import-icons.mjs",
+    "bundle:win": "node scripts/bundle-win.mjs"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22.13"
   },
   "license": "MIT",
   "dependencies": {
-    "better-sqlite3": "^12.11.1",
     "express": "^4.19.2",
     "ws": "^8.18.0"
   }
