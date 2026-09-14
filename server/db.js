@@ -217,6 +217,10 @@ export function openDb() {
     // (state.js setzt den Timer-Anker beim Start neu) — siehe loadState.
     setMetaValue('activeSince', persisted.activeSince ?? null);
     setMetaValue('paused', !!persisted.paused);
+    // Wettbewerb-Timer als ein Meta-Eintrag (kleines, geschlossenes Objekt — eine
+    // eigene Tabelle bringt hier nichts). endsAt ist absolut, der Countdown läuft
+    // daher über einen Neustart hinweg korrekt weiter.
+    setMetaValue('contest', persisted.contest ?? null);
 
     const settings = persisted.settings || {};
     for (const [k, v] of Object.entries(settings)) {
@@ -485,6 +489,7 @@ export function loadFromDb() {
     activeTargetId: getMetaValue('activeTargetId') ?? null,
     activeSince: getMetaValue('activeSince') ?? null,
     paused: getMetaValue('paused') ?? false,
+    contest: getMetaValue('contest') ?? null,
     runs,
     foundItems,
     settings,

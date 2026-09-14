@@ -23,6 +23,10 @@ const el = {
   tzTitle: document.getElementById('tz-title'),
   tzCurrent: document.getElementById('tz-current'),
   tzNext: document.getElementById('tz-next'),
+  contest: document.getElementById('contest'),
+  contestLabel: document.getElementById('contest-label'),
+  contestTime: document.getElementById('contest-time'),
+  contestNote: document.getElementById('contest-note'),
 };
 
 let targets = [];
@@ -37,6 +41,11 @@ let lastState = null; // für den Sekunden-Tick der Live-Zeiten
 const MAX_TICKER_ITEMS = 30;
 const TICKER_SECONDS_PER_ITEM = 3;
 const MAX_VISIBLE_HISTORY = 6;
+
+// Wettbewerb-Timer: ab wann die Restzeit farblich warnt (5 Min) bzw. die letzte
+// Minute zusätzlich pulsiert.
+const CONTEST_WARN_MS = 5 * 60 * 1000;
+const CONTEST_FINAL_MS = 60 * 1000;
 
 async function loadData() {
   try {
@@ -161,6 +170,34 @@ function renderHistory(state) {
   }
 }
 
+// Restzeit des Wettbewerb-Timers. Läuft er, wird aus dem absoluten Endzeitpunkt
+// gerechnet — damit stimmt die Anzeige auch zwischen zwei State-Updates (der
+// Server broadcastet den Countdown bewusst nicht im Sekundentakt).
+function contestRemainingMs(c) {
+  if (!c) return 0;
+  if (c.running && c.endsAt != null) return Math.max(0, c.endsAt - Date.now());
+  return Math.max(0, c.remainingMs ?? 0);
+}
+
+// Wettbewerb-Timer als erstes Panel der Overlay-Spalte. Ausgeschaltet verschwindet
+// das Panel komplett, die übrigen Boxen rücken dann einfach nach oben.
+function renderContest(state) {
+  const c = state.contest;
+  const visible = !!c?.show;
+  el.contest.classList.toggle('hidden', !visible);
+  if (!visible) return;
+
+  const ms = contestRemainingMs(c);
+  const expired = !c.running && ms <= 0;
+  el.contestLabel.textContent = c.label || '';
+  el.contestTime.textContent = formatDuration(ms);
+  el.contestNote.classList.toggle('hidden', !expired);
+  el.contest.classList.toggle('paused', !c.running && !expired);
+  el.contest.classList.toggle('warn', c.running && ms <= CONTEST_WARN_MS && ms > CONTEST_FINAL_MS);
+  el.contest.classList.toggle('final', c.running && ms <= CONTEST_FINAL_MS);
+  el.contest.classList.toggle('expired', expired);
+}
+
 // Terror-Zone: aktuelle/nächste Zone mit gewähltem Label. Bei Modus 'off' (oder
 // fehlenden Daten) bleibt das Panel ausgeblendet.
 function renderTz(state) {
@@ -189,6 +226,9 @@ function render(state) {
 
   // Terror-Zone
   renderTz(state);
+
+  // Wettbewerb-Timer (eigene Ebene über allem)
+  renderContest(state);
 
   // Counter (mit Pop-Animation bei Änderung)
   const count = state.activeTargetId ? state.runs?.[state.activeTargetId]?.count ?? 0 : 0;
@@ -268,6 +308,7 @@ function renderTicker(state) {
 function tickTimes() {
   if (!lastState) return;
   renderSummary(lastState);
+  renderContest(lastState);
   for (const span of el.history.querySelectorAll('[data-time-for]')) {
     span.textContent = formatDuration(liveFarmMs(lastState, span.dataset.timeFor));
   }

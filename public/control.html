@@ -63,6 +63,62 @@
         </section>
       </div>
 
+      <!-- Wettbewerb-Timer: Countdown für Wettbewerbe, im Overlay über allem -->
+      <div class="row row-contest">
+        <section class="card contest-card">
+          <h2 data-i18n="contest.heading">Wettbewerb-Timer</h2>
+          <div class="contest-grid">
+            <div class="contest-setup">
+              <label class="contest-field">
+                <span class="contest-flabel" data-i18n="contest.label">Titel im Overlay</span>
+                <input
+                  type="text"
+                  id="contest-label"
+                  class="contest-input"
+                  maxlength="60"
+                  data-i18n-placeholder="contest.labelPlaceholder"
+                  placeholder="z. B. Wer findet am meisten?"
+                  autocomplete="off"
+                />
+              </label>
+
+              <div class="contest-flabel" data-i18n="contest.duration">Dauer</div>
+              <div class="contest-presets" id="contest-presets">
+                <button class="chip" data-min="30"></button>
+                <button class="chip" data-min="60"></button>
+                <button class="chip" data-min="120"></button>
+                <button class="chip" data-min="180"></button>
+              </div>
+              <div class="contest-custom">
+                <label class="contest-num">
+                  <input type="number" id="contest-hours" min="0" max="24" step="1" value="2" />
+                  <span data-i18n="contest.hours">Std</span>
+                </label>
+                <label class="contest-num">
+                  <input type="number" id="contest-minutes" min="0" max="59" step="1" value="0" />
+                  <span data-i18n="contest.minutes">Min</span>
+                </label>
+                <button class="btn small" id="contest-apply" data-i18n="btn.apply">Übernehmen</button>
+              </div>
+              <p class="hint" data-i18n="contest.hint">Dauer nur im gestoppten Zustand änderbar.</p>
+            </div>
+
+            <div class="contest-run">
+              <div class="contest-rlabel" data-i18n="contest.remaining">Restzeit</div>
+              <div class="contest-remaining" id="contest-remaining">02:00:00</div>
+              <div class="contest-actions">
+                <button class="btn primary" id="contest-toggle" data-i18n="btn.start">Start</button>
+                <button class="btn" id="contest-reset" data-i18n="btn.reset">Zurücksetzen</button>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="contest-show" />
+                <span data-i18n="contest.show">Timer im Overlay zeigen</span>
+              </label>
+            </div>
+          </div>
+        </section>
+      </div>
+
       <!-- Zeile 2: Verlauf · Gefunden -->
       <div class="row row-history">
         <!-- Verlauf -->

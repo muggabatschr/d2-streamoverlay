@@ -742,3 +742,122 @@ a.btn {
 .item-icon--fallback.q-runeword { background: var(--q-runeword); }
 .item-icon--fallback.q-crafted { background: var(--q-crafted); }
 .item-icon--fallback.q-normal { background: var(--q-normal); }
+
+/* --- Wettbewerb-Timer -----------------------------------------------------
+   Links die Einrichtung (Titel + Dauer), rechts der laufende Countdown mit den
+   Bedienknöpfen. Bricht auf schmalen Screens untereinander um. */
+.contest-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+.contest-setup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.contest-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.contest-flabel {
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.contest-input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #15110b;
+  color: var(--text);
+  font-size: 14px;
+}
+.contest-input:focus {
+  outline: none;
+  border-color: var(--border-strong);
+}
+.contest-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.contest-custom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.contest-num {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.contest-num input {
+  width: 68px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #15110b;
+  color: var(--text);
+  font-size: 14px;
+}
+.contest-num input:focus {
+  outline: none;
+  border-color: var(--border-strong);
+}
+/* Während der Timer läuft, sind Dauer-Eingaben gesperrt (siehe Reducer). */
+.contest-setup.locked .chip,
+.contest-setup.locked input,
+.contest-setup.locked .btn {
+  opacity: 0.4;
+  pointer-events: none;
+}
+.contest-setup.locked .contest-input,
+.contest-setup.locked .contest-field {
+  opacity: 1;
+  pointer-events: auto; /* der Titel bleibt auch im Lauf änderbar */
+}
+
+.contest-run {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.contest-rlabel {
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.contest-remaining {
+  font-family: 'Cinzel', serif;
+  font-size: 46px;
+  line-height: 1;
+  font-weight: 700;
+  color: var(--gold-bright);
+  font-variant-numeric: tabular-nums;
+}
+.contest-remaining.paused {
+  color: var(--muted);
+}
+.contest-remaining.warn {
+  color: #ffcf6b;
+}
+.contest-remaining.final,
+.contest-remaining.expired {
+  color: #ff6b6b;
+}
+.contest-actions {
+  display: flex;
+  gap: 10px;
+}
+.contest-actions .btn {
+  flex: 1;
+}

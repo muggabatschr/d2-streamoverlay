@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
 import { WebSocketServer } from 'ws';
-import { loadState, getState, applyAction, setTerrorZone } from './state.js';
+import { loadState, getState, applyAction, setTerrorZone, setChangeNotifier } from './state.js';
 import { startTerrorZone } from './terrorzone.js';
 import {
   closeDb,
@@ -49,6 +49,10 @@ function broadcastState() {
   }
 }
 
+// Der Wettbewerb-Timer läuft von selbst ab (ohne Client-Aktion) — der State
+// meldet das hierher zurück, damit alle Clients den Endzustand mitbekommen.
+setChangeNotifier(broadcastState);
+
 // Aktion per HTTP auslösen — ermöglicht globale OS-Hotkeys (z. B. während D2R im
 // Vollbild läuft), die per curl/PowerShell denselben Reducer ansteuern wie der
 // WS-Handler. Die Aktion kommt als JSON-Body ODER als Query (?type=INCREMENT);
@@ -60,6 +64,7 @@ function handleHttpAction(req, res) {
   const action = { type: src.type };
   if (src.targetId != null) action.targetId = String(src.targetId);
   if (src.value != null) action.value = Number(src.value);
+  if (src.label != null) action.label = String(src.label);
   const changed = applyAction(action);
   if (changed) broadcastState();
   res.json({ ok: changed, type: action.type });

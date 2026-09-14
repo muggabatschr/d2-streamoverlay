@@ -50,7 +50,22 @@ const el = {
   season: document.getElementById('season'),
   offline: document.getElementById('offline'),
   variantPrompt: document.getElementById('variant-prompt'),
+  contestLabel: document.getElementById('contest-label'),
+  contestPresets: document.getElementById('contest-presets'),
+  contestHours: document.getElementById('contest-hours'),
+  contestMinutes: document.getElementById('contest-minutes'),
+  contestApply: document.getElementById('contest-apply'),
+  contestRemaining: document.getElementById('contest-remaining'),
+  contestToggle: document.getElementById('contest-toggle'),
+  contestReset: document.getElementById('contest-reset'),
+  contestShow: document.getElementById('contest-show'),
+  contestSetup: document.querySelector('.contest-setup'),
 };
+
+// Wettbewerb-Timer: Warnschwellen (identisch zum Overlay) — die letzten 5 Minuten
+// färben die Restzeit, die letzte Minute zusätzlich.
+const CONTEST_WARN_MS = 5 * 60 * 1000;
+const CONTEST_FINAL_MS = 60 * 1000;
 
 let targets = [];
 let items = [];
@@ -133,6 +148,7 @@ function connect() {
       renderSettings();
       renderFound();
       renderTz();
+      renderContest();
       renderPicker();
       // Fund-Logbuch nur neu laden, wenn sich die Anzahl geändert hat; sonst nur
       // neu rendern (z. B. bei Sprachwechsel — relokalisiert Namen/Datumsformat).
@@ -304,6 +320,7 @@ function renderHistory() {
 function tickTimes() {
   if (!state) return;
   el.counterTime.textContent = formatDuration(liveFarmMs(state.activeTargetId));
+  renderContest();
   for (const span of el.historyList.querySelectorAll('[data-time-for]')) {
     span.textContent = formatDuration(liveFarmMs(span.dataset.timeFor));
   }
@@ -373,6 +390,107 @@ function renderTz() {
 for (const chip of el.tzModes.querySelectorAll('.chip')) {
   chip.addEventListener('click', () => send({ type: 'SET_TZ_MODE', value: chip.dataset.mode }));
 }
+
+// --- Wettbewerb-Timer -----------------------------------------------------
+// Countdown für Wettbewerbe („wer findet in 2 h am meisten"). Der Server hält
+// Dauer/Restzeit; hier wird nur bedient und die Restzeit sekündlich neu gerechnet
+// (aus dem absoluten Endzeitpunkt, solange er läuft).
+
+// Voreingestellte Dauern als Chips — Beschriftung folgt der UI-Sprache.
+function presetLabel(minutes) {
+  return minutes % 60 === 0
+    ? t('duration.hours', { n: minutes / 60 })
+    : t('duration.minutes', { n: minutes });
+}
+
+// Chip-Beschriftungen setzen — auch schon vor der ersten State-Nachricht, damit
+// die Knöpfe nicht leer stehen.
+function renderContestPresets() {
+  for (const chip of el.contestPresets.querySelectorAll('.chip')) {
+    chip.textContent = presetLabel(Number(chip.dataset.min));
+  }
+}
+
+function contestRemainingMs(c) {
+  if (!c) return 0;
+  if (c.running && c.endsAt != null) return Math.max(0, c.endsAt - Date.now());
+  return Math.max(0, c.remainingMs ?? 0);
+}
+
+function renderContest() {
+  const c = state?.contest;
+  if (!c) return;
+  const ms = contestRemainingMs(c);
+  const expired = !c.running && ms <= 0;
+
+  el.contestRemaining.textContent = formatDuration(ms);
+  el.contestRemaining.classList.toggle('paused', !c.running && !expired);
+  el.contestRemaining.classList.toggle(
+    'warn',
+    c.running && ms <= CONTEST_WARN_MS && ms > CONTEST_FINAL_MS
+  );
+  el.contestRemaining.classList.toggle('final', c.running && ms <= CONTEST_FINAL_MS);
+  el.contestRemaining.classList.toggle('expired', expired);
+
+  // Läuft er, wird der Knopf zur Pause; nach einer Pause heißt er „Fortsetzen".
+  el.contestToggle.textContent = c.running
+    ? t('btn.pause')
+    : !expired && c.remainingMs < c.durationMs
+      ? t('btn.resume')
+      : t('btn.start');
+
+  el.contestShow.checked = c.show === true;
+  // Dauer-Eingaben nur im gestoppten Zustand (der Reducer lehnt sie sonst ab).
+  el.contestSetup.classList.toggle('locked', c.running);
+
+  // Chips beschriften und die aktive Dauer markieren.
+  renderContestPresets();
+  for (const chip of el.contestPresets.querySelectorAll('.chip')) {
+    chip.classList.toggle('active', Number(chip.dataset.min) * 60_000 === c.durationMs);
+  }
+
+  // Eingabefelder nur spiegeln, wenn gerade nicht darin getippt wird.
+  if (document.activeElement !== el.contestLabel) el.contestLabel.value = c.label || '';
+  if (
+    document.activeElement !== el.contestHours &&
+    document.activeElement !== el.contestMinutes
+  ) {
+    el.contestHours.value = String(Math.floor(c.durationMs / 3_600_000));
+    el.contestMinutes.value = String(Math.floor((c.durationMs % 3_600_000) / 60_000));
+  }
+}
+
+for (const chip of el.contestPresets.querySelectorAll('.chip')) {
+  chip.addEventListener('click', () =>
+    send({ type: 'CONTEST_SET_DURATION', value: Number(chip.dataset.min) * 60_000 })
+  );
+}
+// Freie Dauer aus den Std-/Min-Feldern übernehmen (Knopf oder Enter).
+function applyCustomDuration() {
+  const h = Math.max(0, Math.floor(Number(el.contestHours.value) || 0));
+  const m = Math.max(0, Math.floor(Number(el.contestMinutes.value) || 0));
+  const ms = h * 3_600_000 + m * 60_000;
+  if (ms > 0) send({ type: 'CONTEST_SET_DURATION', value: ms });
+}
+el.contestApply.addEventListener('click', applyCustomDuration);
+for (const input of [el.contestHours, el.contestMinutes]) {
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') applyCustomDuration();
+  });
+}
+el.contestToggle.addEventListener('click', () =>
+  send({ type: state?.contest?.running ? 'CONTEST_PAUSE' : 'CONTEST_START' })
+);
+el.contestReset.addEventListener('click', () => {
+  if (confirm(t('confirm.contestReset'))) send({ type: 'CONTEST_RESET' });
+});
+el.contestShow.addEventListener('change', (e) =>
+  send({ type: 'CONTEST_SET_SHOW', value: e.target.checked })
+);
+// Titel beim Verlassen des Feldes bzw. mit Enter übernehmen.
+el.contestLabel.addEventListener('change', (e) =>
+  send({ type: 'CONTEST_SET_LABEL', label: e.target.value })
+);
 
 // --- Item-Picker ----------------------------------------------------------
 function renderPicker() {
@@ -639,6 +757,7 @@ el.clearFinds.addEventListener('click', () => {
 
 // --- Init -----------------------------------------------------------------
 applyTranslations(); // statische Defaults (Deutsch) sofort anwenden
+renderContestPresets();
 await loadData();
 renderPicker();
 connect();

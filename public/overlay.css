@@ -357,3 +357,71 @@ body {
 .hidden {
   display: none !important;
 }
+
+/* --- Wettbewerb-Timer -----------------------------------------------------
+   Countdown für Wettbewerbe („wer findet in 2 h am meisten"). Ein normales Panel
+   an erster Stelle der Overlay-Spalte — gleiche Breite und gleicher Rahmen wie
+   die übrigen Boxen, also ohne Überlappung. */
+.contest {
+  text-align: center;
+}
+.contest-label {
+  font-size: 12px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(199, 179, 119, 0.7);
+}
+.contest-label:empty {
+  display: none;
+}
+.contest-time {
+  font-size: 44px;
+  line-height: 1.1;
+  font-weight: 700;
+  color: var(--gold-bright);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 18px rgba(199, 179, 119, 0.5);
+}
+.contest-note {
+  font-size: 13px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #ff6b6b;
+}
+/* Pausiert: gedämpft, damit im Stream sofort klar ist, dass nichts läuft. */
+.contest.paused .contest-time {
+  color: rgba(199, 179, 119, 0.55);
+  text-shadow: none;
+}
+/* Letzte 5 Minuten: Warnfarbe. Letzte Minute zusätzlich pulsierend. */
+.contest.warn .contest-time {
+  color: #ffcf6b;
+  text-shadow: 0 0 18px rgba(255, 207, 107, 0.55);
+}
+.contest.final {
+  border-color: rgba(255, 107, 107, 0.75);
+}
+.contest.final .contest-time,
+.contest.expired .contest-time {
+  color: #ff6b6b;
+  text-shadow: 0 0 22px rgba(255, 107, 107, 0.7);
+}
+.contest.final .contest-time {
+  animation: contest-pulse 1s ease-in-out infinite;
+}
+@keyframes contest-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 0.8;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .contest.final .contest-time {
+    animation: none;
+  }
+}

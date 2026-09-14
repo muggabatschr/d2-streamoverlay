@@ -21,6 +21,11 @@ simplen Hotkey-Tools das JSON-Quoting). Unterstützte `type`-Werte u. a.:
 `INCREMENT`, `DECREMENT`, `SET_PAUSED` (optional `value`),
 `SET_ACTIVE_TARGET` (mit `targetId`), `RESET_TARGET`. Antwort: `{ "ok": true, ... }`.
 
+Auch der **Wettbewerb-Timer** lässt sich so schalten: `CONTEST_START`,
+`CONTEST_PAUSE`, `CONTEST_RESET`, `CONTEST_SET_SHOW` (ohne `value` = umschalten),
+`CONTEST_SET_DURATION` (mit `value` in Millisekunden, z. B. `?type=CONTEST_SET_DURATION&value=5400000`
+für 90 Minuten) und `CONTEST_SET_LABEL` (mit `label`).
+
 Beispiel (Run hochzählen, plattformunabhängig):
 
 ```bash

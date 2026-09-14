@@ -9,7 +9,9 @@ Ein Overlay für **Diablo II: Resurrected**, das du als Browserquelle in
   Ziele aggregiert** insgesamt,
 - die **gefundenen Items** als vertikales **Laufband** unter dem Verlauf
   (Icons + klassische D2-Qualitätsfarben),
-- die aktuelle und nächste **Terror Zone** (optional, via d2emu.com).
+- die aktuelle und nächste **Terror Zone** (optional, via d2emu.com),
+- einen **Wettbewerb-Timer**: ein frei einstellbarer Countdown als oberstes Panel
+  im Overlay (für „wer findet in X Zeit am meisten").
 
 Oberfläche und Spieldaten sind **mehrsprachig** (Deutsch, Englisch, Französisch,
 Spanisch, Chinesisch) — siehe [Sprachen](#sprachen).
@@ -105,6 +107,21 @@ Monitor oder per Handy im selben Netzwerk über die IP deines PCs).
   Season-Eingabe und markiert neue Funde als **offline** (statt mit Season-Nummer).
   So lässt sich auch Offline-/Singleplayer-Beute tracken; im Logbuch erscheint dann
   ein `Offline`-Badge.
+- **Wettbewerb-Timer:** Ein Countdown für Wettbewerbe („wer findet in 2 Stunden am
+  meisten"). Die **Dauer ist frei einstellbar** — entweder über die Schnellwahl
+  (30 Min / 1 Std / 2 Std / 3 Std) oder über die Felder **Std/Min** plus
+  „Übernehmen" (auch <kbd>Enter</kbd>); erlaubt ist alles von **1 Minute bis 24
+  Stunden**, Vorgabe sind 2 Stunden. Der optionale **Titel** erscheint als
+  Überschrift im Overlay (z. B. „Wer findet am meisten?"). Mit
+  **Start/Pause/Fortsetzen** steuerst du den Lauf, „Zurücksetzen" stellt die volle
+  Dauer wieder her. Die Dauer lässt sich nur im gestoppten Zustand ändern.
+  Eingeblendet wird er über **„Timer im Overlay zeigen"** — dann erscheint er als
+  **oberstes Panel** der Overlay-Spalte, in gleicher Breite und im gleichen Rahmen
+  wie die übrigen Boxen (überlappt also nichts). Die letzten 5 Minuten färben
+  sich gelb, die letzte Minute rot und pulsiert; bei 0 erscheint „Zeit
+  abgelaufen!". Der Countdown hängt an einem **absoluten Endzeitpunkt** — ein
+  Server-Neustart unterbricht ihn also nicht, und alle Clients zeigen dieselbe
+  Restzeit.
 - **Anzeige:** Counter bzw. Funde im Overlay ein-/ausblenden.
 - **Sprache:** Zwei getrennte Umschalter (siehe [Sprachen](#sprachen)) —
   **Datensprache** (Item-/Boss-/Zonennamen) und **UI-Sprache** (Oberflächentexte).
@@ -256,6 +273,10 @@ geht damit nicht verloren.
 - Absichtlich nicht gespeichert wird nur der laufende Farm-Timer-Anker (damit
   Server-Downtime nicht als Farm-Zeit zählt) sowie die Terror-Zone (wird beim Start
   neu abgerufen).
+- Der **Wettbewerb-Timer** wird dagegen mit seinem absoluten Endzeitpunkt gesichert
+  und läuft nach einem Neustart einfach weiter — die Wettbewerbszeit lief für die
+  Zuschauer ja ebenfalls weiter. War er währenddessen abgelaufen, steht er beim
+  Start auf „Zeit abgelaufen".
 
 > Voraussetzung: `npm install` installiert `better-sqlite3` (liefert für gängige
 > Plattformen vorgebaute Binärdateien; nur bei seltenem Fallback wird kompiliert —

@@ -27,6 +27,13 @@ const STATE_FILE = join(DATA_DIR, 'state.json');
 
 const MAX_FOUND_ITEMS = 200; // harte Obergrenze, damit die Datei nicht unbegrenzt wächst
 
+// Wettbewerb-Timer: Vorgabedauer und Grenzen (1 Minute bis 24 Stunden) sowie die
+// maximale Länge der optionalen Overlay-Überschrift.
+const CONTEST_DEFAULT_MS = 2 * 60 * 60 * 1000;
+const CONTEST_MIN_MS = 60 * 1000;
+const CONTEST_MAX_MS = 24 * 60 * 60 * 1000;
+const CONTEST_MAX_LABEL = 60;
+
 function defaultState() {
   return {
     activeTargetId: null,
@@ -56,6 +63,18 @@ function defaultState() {
     // nicht persistiert und beim Start neu geholt. Enthält Zonen-IDs; die Namen
     // löst das Frontend nach dataLang auf.
     terrorZone: null, // { currentIds: number[], nextIds: number[], updatedAt: number }
+    // Wettbewerb-Timer: läuft von einer eingestellten Dauer herunter (z. B. „wer
+    // findet in 2 h am meisten"). Unabhängig vom Farm-Timer (activeSince/paused)
+    // und im Overlay als eigene Ebene über allem eingeblendet.
+    contest: {
+      durationMs: CONTEST_DEFAULT_MS, // eingestellte Gesamtdauer
+      remainingMs: CONTEST_DEFAULT_MS, // Restzeit im Ruhezustand (gestoppt/pausiert)
+      endsAt: null, // absoluter Endzeitpunkt, solange er läuft (überlebt Neustarts)
+      running: false,
+      expired: false, // regulär auf 0 gelaufen (nicht bloß zurückgesetzt)
+      label: '', // optionale Überschrift im Overlay
+      show: false, // im Overlay einblenden
+    },
     // Anzahl der Einträge im Fund-Logbuch. Transient/abgeleitet (aus der DB), dient
     // dem Frontend als Signal, das Logbuch (/api/finds) neu zu laden.
     findsCount: 0,
@@ -136,6 +155,61 @@ function foundKey(it) {
   return it.variant ? `${base}|${it.variant}` : base;
 }
 
+// Begrenzt eine Wettbewerbs-Dauer auf das erlaubte Fenster (1 Minute – 24 Stunden).
+// Ungültige Eingaben liefern fallback.
+function clampDuration(ms, fallback) {
+  const v = Math.floor(Number(ms));
+  if (!Number.isFinite(v)) return fallback;
+  return Math.min(CONTEST_MAX_MS, Math.max(CONTEST_MIN_MS, v));
+}
+
+// Normalisiert den Wettbewerb-Timer aus der Persistenz. Ein laufender Timer wird
+// aus dem absoluten Endzeitpunkt fortgeschrieben — eine Server-Downtime zählt
+// also mit, denn die Wettbewerbszeit lief für die Zuschauer ja weiter. Ist die
+// Zeit während der Downtime abgelaufen, steht der Timer beim Start auf „vorbei".
+function normalizeContest(loaded) {
+  const base = {
+    durationMs: CONTEST_DEFAULT_MS,
+    remainingMs: CONTEST_DEFAULT_MS,
+    endsAt: null,
+    running: false,
+    expired: false,
+    label: '',
+    show: false,
+  };
+  if (!loaded || typeof loaded !== 'object') return base;
+
+  const durationMs = clampDuration(loaded.durationMs, base.durationMs);
+  const c = {
+    durationMs,
+    remainingMs: Number.isFinite(loaded.remainingMs)
+      ? Math.min(durationMs, Math.max(0, Math.floor(loaded.remainingMs)))
+      : durationMs,
+    endsAt: typeof loaded.endsAt === 'number' ? loaded.endsAt : null,
+    running: loaded.running === true,
+    expired: loaded.expired === true,
+    label: typeof loaded.label === 'string' ? loaded.label.trim().slice(0, CONTEST_MAX_LABEL) : '',
+    show: loaded.show === true,
+  };
+
+  if (c.running && c.endsAt != null) {
+    const left = c.endsAt - Date.now();
+    if (left > 0) {
+      c.remainingMs = left;
+    } else {
+      c.running = false;
+      c.endsAt = null;
+      c.remainingMs = 0;
+      c.expired = true;
+    }
+  } else {
+    // Ohne gültigen Endzeitpunkt kann nichts laufen — Zustand begradigen.
+    c.running = false;
+    c.endsAt = null;
+  }
+  return c;
+}
+
 // Tiefes Mergen der Defaults, damit neue Felder bei bestehenden state.json-Dateien
 // automatisch ergänzt werden.
 function withDefaults(loaded) {
@@ -160,6 +234,7 @@ function withDefaults(loaded) {
     // terrorZone wird bewusst NICHT aus der Datei übernommen — ein persistierter
     // Wert wäre nach einem Neustart veraltet; der Abruf liefert ihn neu.
     terrorZone: null,
+    contest: normalizeContest(loaded.contest),
     // findsCount wird aus der DB neu bestimmt (siehe loadState), nicht persistiert.
     findsCount: 0,
   };
@@ -204,11 +279,46 @@ export async function loadState() {
   // die Server-Downtime als Farm-Zeit mitgezählt. Anker neu setzen statt die
   // Lücke zu akkumulieren (läuft nur weiter, wenn nicht pausiert und Ziel aktiv).
   state.activeSince = state.activeTargetId && !state.paused ? Date.now() : null;
+  // Ein Wettbewerb, der über den Neustart hinaus läuft, muss weiterhin von selbst
+  // ablaufen können (normalizeContest hat ihn ggf. bereits beendet).
+  scheduleContestExpiry();
   return state;
 }
 
 export function getState() {
   return state;
+}
+
+// Der Wettbewerb-Timer läuft auch ohne Client-Aktion ab. Damit alle Clients
+// denselben Endzustand sehen, meldet der Server das Ablaufen selbst — index.js
+// hängt hier seinen Broadcast ein.
+let notifyChange = () => {};
+export function setChangeNotifier(fn) {
+  notifyChange = typeof fn === 'function' ? fn : () => {};
+}
+
+let contestTimer = null;
+
+// Plant das Ablaufen des Wettbewerb-Timers ein (bzw. räumt einen geplanten Lauf
+// wieder ab). Nach jeder Änderung am Timer aufrufen.
+function scheduleContestExpiry() {
+  if (contestTimer) {
+    clearTimeout(contestTimer);
+    contestTimer = null;
+  }
+  const c = state.contest;
+  if (!c.running || c.endsAt == null) return;
+  contestTimer = setTimeout(() => {
+    contestTimer = null;
+    c.running = false;
+    c.endsAt = null;
+    c.remainingMs = 0;
+    c.expired = true;
+    save();
+    notifyChange();
+  }, Math.max(0, c.endsAt - Date.now()));
+  // Der Timer allein soll den Prozess nicht am Leben halten.
+  contestTimer.unref?.();
 }
 
 // Setzt die aktuelle/nächste Terror-Zone (vom d2emu-Abruf). Transient — wird nicht
@@ -493,6 +603,72 @@ export function applyAction(action) {
       if (!Number.isInteger(v) || v < 1 || v > 999) return false;
       if (state.settings.season === v) return false;
       state.settings.season = v;
+      break;
+    }
+    // --- Wettbewerb-Timer ---------------------------------------------------
+    // Countdown für Wettbewerbe („wer findet in 2 h am meisten"). Quelle der
+    // Wahrheit ist endsAt (absolut) im laufenden bzw. remainingMs im ruhenden
+    // Zustand — so rechnen alle Clients dieselbe Restzeit aus, ohne dass der
+    // Server im Sekundentakt broadcasten muss.
+    case 'CONTEST_SET_DURATION': {
+      const c = state.contest;
+      // Während der Timer läuft, wäre unklar, worauf sich die Restzeit bezieht —
+      // erst stoppen, dann neu einstellen.
+      if (c.running) return false;
+      const ms = clampDuration(action.value, null);
+      if (ms == null) return false;
+      if (c.durationMs === ms && c.remainingMs === ms && !c.expired) return false;
+      c.durationMs = ms;
+      c.remainingMs = ms;
+      c.endsAt = null;
+      c.expired = false;
+      break;
+    }
+    case 'CONTEST_START': {
+      const c = state.contest;
+      if (c.running) return false;
+      // Nach Ablauf (Restzeit 0) startet „Start" wieder über die volle Dauer.
+      const left = c.remainingMs > 0 ? c.remainingMs : c.durationMs;
+      c.remainingMs = left;
+      c.endsAt = Date.now() + left;
+      c.running = true;
+      c.expired = false;
+      scheduleContestExpiry();
+      break;
+    }
+    case 'CONTEST_PAUSE': {
+      const c = state.contest;
+      if (!c.running) return false;
+      c.remainingMs = Math.max(0, (c.endsAt ?? Date.now()) - Date.now());
+      c.endsAt = null;
+      c.running = false;
+      scheduleContestExpiry();
+      break;
+    }
+    case 'CONTEST_RESET': {
+      const c = state.contest;
+      c.remainingMs = c.durationMs;
+      c.endsAt = null;
+      c.running = false;
+      c.expired = false;
+      scheduleContestExpiry();
+      break;
+    }
+    case 'CONTEST_SET_LABEL': {
+      // Eigenes Feld statt value: der HTTP-Hotkey-Endpoint wandelt value in eine
+      // Zahl um und würde einen Text zerstören.
+      if (typeof action.label !== 'string') return false;
+      const label = action.label.trim().slice(0, CONTEST_MAX_LABEL);
+      if (state.contest.label === label) return false;
+      state.contest.label = label;
+      break;
+    }
+    case 'CONTEST_SET_SHOW': {
+      // Ohne (bzw. mit ungültigem) value wird umgeschaltet — so genügt Hotkeys
+      // ein Aufruf ohne Parameter.
+      const value = typeof action.value === 'boolean' ? action.value : !state.contest.show;
+      if (state.contest.show === value) return false;
+      state.contest.show = value;
       break;
     }
     default:

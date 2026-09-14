@@ -8,6 +8,16 @@
   </head>
   <body>
     <div class="overlay" id="overlay">
+      <!-- Wettbewerb-Timer: erstes Panel der Spalte (über allen anderen Boxen),
+           sichtbar nur, wenn im Steuerpanel eingeschaltet. -->
+      <section class="panel contest hidden" id="contest">
+        <div class="contest-label" id="contest-label"></div>
+        <div class="contest-time" id="contest-time">00:00:00</div>
+        <div class="contest-note hidden" id="contest-note" data-i18n="contest.expired">
+          Zeit abgelaufen!
+        </div>
+      </section>
+
       <header class="panel header" id="header">
         <div class="target" id="target" data-i18n="overlay.noTarget">Kein Ziel gewählt</div>
       </header>
