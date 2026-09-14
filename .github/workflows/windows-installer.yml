@@ -51,17 +51,30 @@ jobs:
           test -f build/win/windows/start.vbs   || { echo "Starter fehlt";      exit 1; }
           icons=$(ls build/win/public/assets/items/*.png 2>/dev/null | wc -l)
           echo "Item-Icons im Bundle: $icons"
-          [ "$icons" -ge 100 ] || echo "WARNUNG: auffällig wenige Icons — Quellen erreichbar?"
+          # Harter Abbruch statt Warnung: ein Setup mit lauter Platzhaltern ginge
+          # sonst still durch und fiele erst beim Beschenkten auf.
+          [ "$icons" -ge 100 ] || { echo "Zu wenige Icons ($icons) — Quellen nicht erreichbar?"; exit 1; }
 
       - name: Inno Setup installieren
         run: choco install innosetup --no-progress -y
 
       - name: Setup kompilieren
-        run: >-
-          & "$env:ProgramFiles(x86)\Inno Setup 6\ISCC.exe"
-          /DMyAppVersion=${{ steps.meta.outputs.version }}
-          /DBundleDir=..\build\win
-          windows\installer.iss
+        shell: pwsh
+        run: |
+          # ISCC.exe erst suchen statt den Pfad fest anzunehmen. "$env:ProgramFiles(x86)"
+          # funktioniert NICHT: PowerShell liest nur $env:ProgramFiles als Variable und
+          # hängt "(x86)" als Literal an -> "C:\Program Files(x86)", ohne Leerzeichen.
+          # Die geschweifte Schreibweise nimmt die Klammern in den Variablennamen auf.
+          $candidates = @(
+            (Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'),
+            (Join-Path $env:ProgramFiles 'Inno Setup 6\ISCC.exe')
+          )
+          $iscc = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $iscc) { $iscc = (Get-Command ISCC.exe -ErrorAction SilentlyContinue).Source }
+          if (-not $iscc) { throw "ISCC.exe nicht gefunden. Gesucht in: $($candidates -join ' | ')" }
+          Write-Host "Inno Setup: $iscc"
+          & $iscc /DMyAppVersion=${{ steps.meta.outputs.version }} /DBundleDir=..\build\win windows\installer.iss
+          if ($LASTEXITCODE -ne 0) { throw "ISCC beendet mit Code $LASTEXITCODE" }
 
       # Als Build-Artefakt, NICHT als öffentliches Release: das Setup enthält die
       # Item-Grafiken, und die sollen nicht über GitHub verteilt werden. Das
