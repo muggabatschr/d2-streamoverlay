@@ -1,8 +1,8 @@
 # Windows-Variante (Self-Contained Installer) für d2-streamoverlay
 
-> **Status: umgesetzt.** Dieses Dokument hält den ursprünglich abgestimmten Ansatz
-> fest. Beim Bauen haben sich zwei Dinge geändert — siehe „Abweichungen von diesem
-> Plan" am Ende. Die Bedienungsanleitung steht im README unter
+> **Status: umgesetzt und auf echtem Windows bestätigt** (Setup 1.1.0, 14.09.2026).
+> Dieses Dokument hält den ursprünglich abgestimmten Ansatz fest. Beim Bauen haben
+> sich zwei Dinge geändert — siehe „Abweichungen von diesem Plan" am Ende. Die Bedienungsanleitung steht im README unter
 > *[Windows-Version fürs Verschenken](../README.md#windows-version-fürs-verschenken)*.
 
 ## Kontext
@@ -111,23 +111,37 @@ D2EMU-Terror-Zone-Env-Variablen.
 4. README-Abschnitt.
 5. Repo zu GitHub bringen (`git init`, Remote, Push) — Voraussetzung für CI.
 
-## Verifikation
-- **Lokaler Smoke-Test des Launchers (Mac, ohne Installer):**
-  `D2_DATA_DIR=$(mktemp -d) node windows/launcher.mjs` → Server startet, Browser-Open-Logik
-  wird ausgelöst (auf Mac via Fallback `open`), `control.html` lädt, State landet im Temp-Dir
-  statt in `server/data/`.
-- **Voller Build:** Tag pushen (`git tag v1.0.0 && git push --tags`) → GitHub-Actions-Run
-  prüfen, Artefakt `Setup-D2-Overlay-*.exe` herunterladen.
-- **Windows-Endtest:** Setup ausführen → Startmenü-Eintrag klicken → Browser öffnet
-  `http://localhost:3777/control.html`, Overlay unter `/overlay.html` erreichbar; nach
-  Neustart bleiben Runs/Funde erhalten (DB in `%APPDATA%\D2-Overlay`); Deinstallation
-  entfernt das Programm, Daten bleiben.
+## Verifikation — am 14.09.2026 durchlaufen
 
-## Offene Risiken
-- **ABI-Mismatch** node.exe ↔ better-sqlite3 → strikt dieselbe Node-Major in CI für `setup-node`
-  und das portable Download pinnen.
-- **better-sqlite3 Prebuild fehlt** für gewählte Node-Major → ggf. auf jüngere LTS ausweichen
-  oder `npm rebuild` auf dem Runner (MSVC ist auf `windows-latest` vorhanden).
+- **Lokaler Smoke-Test (macOS):** Bundle über `npm run bundle:win`, Launcher daraus
+  gestartet — Server läuft, Datenverzeichnis landet außerhalb des Programmordners,
+  Overlay und Steuerpanel werden ausgeliefert.
+- **Voller Build:** GitHub-Actions-Lauf auf `windows-latest`, Artefakt
+  `Setup-D2-Overlay-1.1.0.exe` (25 MB). Bestätigt nebenbei, dass `npm ci` ohne
+  Build-Tools durchläuft und die 130 Item-Icons zur Bauzeit aus `icons.urls.json`
+  geladen werden.
+- **Windows-Endtest: bestanden.** Installation, Startmenü-Eintrag, automatischer
+  Browser-Start, Item-Icons, Beenden über beide Wege und Datenerhalt über einen
+  Neustart hinweg — alles wie vorgesehen.
+
+### Was der Endtest zutage gefördert hat
+Zwei Fehler, die erst auf echtem Windows bzw. beim Bedienen auffielen und in
+1.1.0 behoben sind:
+
+1. `stop.vbs` benutzte `taskkill /FI "PATH eq …"` — **taskkill hat keinen
+   PATH-Filter**, der Aufruf brach mit „ungültiger Filter" ab und beendete nichts.
+   Ersetzt durch `stop.ps1` (erst `/api/shutdown`, dann gezielt die `node.exe` aus
+   dem Installationsordner).
+2. Ein Startmenü-Eintrag allein reicht nicht: Das Programm läuft ohne Fenster, im
+   Task-Manager steht nur `node.exe`. Das Steuerpanel hat deshalb einen Knopf
+   **Programm beenden** bekommen — der Weg, den man beim Bedienen auch findet.
+
+## Offene Risiken (erledigt)
+Beide Risiken betrafen ausschließlich das native Modul und sind mit dem Wechsel auf
+`node:sqlite` gegenstandslos geworden — es gibt keine ABI-Kopplung und kein Prebuild mehr.
+
+- ~~**ABI-Mismatch** node.exe ↔ better-sqlite3~~
+- ~~**better-sqlite3 Prebuild fehlt** für gewählte Node-Major~~
 
 
 ## Abweichungen von diesem Plan (bei der Umsetzung entschieden)
