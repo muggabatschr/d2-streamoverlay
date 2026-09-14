@@ -1,0 +1,15 @@
+# Standard: Git normalisiert Textdateien intern auf LF.
+* text=auto
+
+# Windows-Dateien brauchen CRLF, auch wenn sie auf einem Mac ausgecheckt werden:
+# Batch-Dateien und der Windows Script Host sind bei LF je nach Version eigen, und
+# die Anleitung soll im Editor des Beschenkten sauber umbrechen.
+*.bat   text eol=crlf
+*.vbs   text eol=crlf
+*.iss   text eol=crlf
+windows/LIESMICH.txt text eol=crlf
+
+# Binärdateien nie anfassen.
+*.ico   binary
+*.png   binary
+*.ttf   binary
