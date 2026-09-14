@@ -1,0 +1,55 @@
+/* Fund-Archiv — seitenspezifische Ergänzungen (gemeinsame Stile: control.css). */
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.finds-summary {
+  margin-top: 12px;
+  font-size: 14px;
+  color: var(--muted);
+}
+.finds-summary strong {
+  color: var(--gold-bright);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Item-Aufstellung: Kacheln „Icon + Name + ×Anzahl", nach Häufigkeit sortiert. */
+.finds-breakdown {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 6px;
+}
+.breakdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  background: #15110b;
+  border-radius: 6px;
+}
+.breakdown-item .bname {
+  flex: 1;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.breakdown-item .bcount {
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold-bright);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1px 8px;
+  font-variant-numeric: tabular-nums;
+}
+.finds-empty {
+  color: var(--muted);
+  font-size: 13px;
+  padding: 6px 8px;
+}

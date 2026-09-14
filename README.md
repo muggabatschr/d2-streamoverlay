@@ -1,0 +1,331 @@
+# D2R Stream-Overlay
+
+Ein Overlay für **Diablo II: Resurrected**, das du als Browserquelle in
+**Streamlabs OBS / OBS** einbindest. Es zeigt:
+
+- das aktuell gefarmte **Akt-/Boss-Ziel** (z. B. Mephisto, Baal, Die Gräfin),
+- einen **Run-Counter pro Ziel** ("wie oft habe ich diesen Run schon gemacht"),
+- eine **Tages-/Gesamtsumme**: Runs (und Farm-Zeit) **heute** sowie über **alle
+  Ziele aggregiert** insgesamt,
+- die **gefundenen Items** als vertikales **Laufband** unter dem Verlauf
+  (Icons + klassische D2-Qualitätsfarben),
+- die aktuelle und nächste **Terror Zone** (optional, via d2emu.com).
+
+Oberfläche und Spieldaten sind **mehrsprachig** (Deutsch, Englisch, Französisch,
+Spanisch, Chinesisch) — siehe [Sprachen](#sprachen).
+
+Bedient wird alles über ein separates **Steuerpanel** (zweiter Monitor oder Handy).
+Das Overlay aktualisiert sich live, der Zustand wird gespeichert und übersteht
+einen Neustart (siehe [Datenspeicherung](#datenspeicherung)).
+
+## Warum ein lokaler Server?
+
+Eine OBS-Browserquelle läuft in einem eigenen Prozess und teilt sich keinen
+Speicher mit deinem normalen Browser. Deshalb läuft ein kleiner lokaler
+Node-Server, der Overlay und Steuerpanel ausliefert und beide per **WebSocket in
+Echtzeit synchronisiert**.
+
+## Installation
+
+Voraussetzung: **Node.js ≥ 18**.
+
+```bash
+npm install
+npm start
+```
+
+Danach läuft der Server auf `http://localhost:3777`:
+
+- **Steuerpanel:** http://localhost:3777/control.html
+- **Overlay (für OBS):** http://localhost:3777/overlay.html
+
+Der Port lässt sich per Umgebungsvariable ändern: `PORT=4000 npm start`.
+
+## In Streamlabs OBS / OBS einbinden
+
+1. Server starten (`npm start`).
+2. In OBS eine **Quelle → Browser** hinzufügen.
+3. URL: `http://localhost:3777/overlay.html`
+4. Breite/Höhe nach Geschmack (z. B. 360 × 720).
+5. Fertig — das Overlay ist eine kompakte, transparente **Spalte** und lässt sich in
+   OBS frei positionieren (z. B. oben links), sodass die Bildmitte und Diablos untere
+   UI frei bleiben.
+
+Das **Steuerpanel** öffnest du in einem normalen Browser (gerne auf einem zweiten
+Monitor oder per Handy im selben Netzwerk über die IP deines PCs).
+
+## Bedienung
+
+- **Run-Ziel** wählen: Klick auf einen Boss/Farm-Spot. Jedes Ziel hat seinen
+  eigenen Counter (als kleine Zahl am Button sichtbar).
+- **Counter:** `+` / `−` bzw. die Tasten <kbd>+</kbd> / <kbd>−</kbd>, plus
+  „Zurücksetzen" (setzt Counter **und** Farm-Zeit des Ziels zurück). Die Tasten
+  wirken nur bei fokussiertem Panel — für **globale Hotkeys**, die auch während
+  D2R im Vollbild zählen (Windows/macOS), siehe [docs/global-hotkeys.md](docs/global-hotkeys.md).
+- **Farm-Zeit:** Pro Ziel wird mitgezählt, wie lange du dort farmst. Der Timer
+  startet automatisch bei der Zielauswahl und stoppt/akkumuliert beim Wechsel auf
+  ein anderes Ziel. Mit **„Pause"/„Fortsetzen"** verhinderst du, dass Leerlauf-
+  oder Offline-Zeit mitgezählt wird.
+- **Verlauf:** Alle bereits angefahrenen Ziele erscheinen (neueste zuerst) mit
+  Run-Anzahl und gesamter Farm-Zeit. Ein Klick auf einen Eintrag macht das Ziel
+  wieder aktiv, sodass du dort weitermachst; über „×" entfernst du einen Eintrag.
+- **Tages-/Gesamtsumme:** Runs werden zusätzlich pro Kalendertag gespeichert. Das
+  Overlay zeigt deshalb zwei Werte über alle Ziele zusammengefasst — „Heute"
+  (Runs und Farm-Zeit des aktuellen Tages) und „Gesamt" (alles aggregiert). Beide
+  werden mit dem Counter-Toggle gemeinsam ein-/ausgeblendet.
+- **Funde:** Item im Suchfeld finden (Filter Unique/Set/Runen/**Skiller**) und
+  anklicken — es erscheint sofort im Overlay. Über „×" einzeln entfernen oder „Alle löschen".
+- **Skiller & Rainbow Facets:** Skill-Grand-Charms (21, alle Klassen/Skill-Bäume) und
+  Rainbow Facets (8 = Element × Level-Up/Tod) sind enthalten. Beim Anklicken öffnet sich
+  ein kleiner Dialog für einen **Zusatz** — beim Skiller ein **Affix** (Leben, Mana,
+  Widerstand, … oder Freitext), beim Facet die **Werte** (z. B. `5/5`). Der Zusatz wird
+  am Fund gespeichert und überall angezeigt: im Overlay-Laufband, in der Funde-Liste des
+  Control-Panels und im Logbuch. Funde mit unterschiedlichem Zusatz (z. B. `5/5` vs. `4/5`)
+  bleiben als eigene Kacheln erhalten, gleiche werden gestapelt. Die Facet-Icons sind die echten
+  Juwel-Grafiken aus dem Spiel, je Element eingefärbt (Feuer = rot, Kälte = blau,
+  Blitz = orange, Gift = grün).
+- **Colossal-Ancients-Juwelen (Reign of the Warlock):** 6 neue Unique-Juwelen aus der
+  Pinnacle-Begegnung — `Defender's Fire`, `Protector's Frost`, `Guardian's Thunder`,
+  `Defender's Bile`, `Protector's Stone` und `Guardian's Light`. Icons sind die echten
+  Spiel-Grafiken (3 Motive nach Präfix Defender/Protector/Guardian, je 2 Juwelen teilen
+  sich ein Bild — wie in der Quelle diablo2.io).
+- **Fund-Verlauf:** Ein dauerhaftes Logbuch hält fest, **wann (Tag/Uhrzeit) welches
+  Item gefunden wurde** — jeder Fund einzeln, auch beim Stapeln. Im Steuerpanel nach
+  Tagen gruppiert einsehbar; programmatisch unter `GET /api/finds`. Einzelne Einträge
+  lassen sich per „×" entfernen (z. B. nach einem Fehlklick), „Alle löschen" leert das
+  ganze Logbuch.
+- **Fund-Archiv:** Eine eigene Seite (`/finds.html`, auch per Link „Fund-Archiv" im
+  Steuerpanel) zeigt alle Funde **gefiltert nach Season bzw. Offline** — mit
+  Gesamtzahl, Item-Aufstellung (was wie oft) und der nach Tagen gruppierten Liste.
+- **Season:** Im Feld „Season" (bei „Funde erfassen") trägst du die aktuelle
+  Ladder-Season ein (Standard 14). Sie wird **bei jedem Fund mitgespeichert** und im
+  Logbuch als Badge (z. B. `S14`) angezeigt. Hinweis: Die Season lässt sich nicht
+  automatisch abrufen (Blizzard bietet keine API) — daher manuell pflegen.
+- **Offline:** Die Checkbox „Offline" neben dem Season-Feld deaktiviert die
+  Season-Eingabe und markiert neue Funde als **offline** (statt mit Season-Nummer).
+  So lässt sich auch Offline-/Singleplayer-Beute tracken; im Logbuch erscheint dann
+  ein `Offline`-Badge.
+- **Anzeige:** Counter bzw. Funde im Overlay ein-/ausblenden.
+- **Sprache:** Zwei getrennte Umschalter (siehe [Sprachen](#sprachen)) —
+  **Datensprache** (Item-/Boss-/Zonennamen) und **UI-Sprache** (Oberflächentexte).
+- **Terror Zone:** Wähle im Steuerpanel zwischen **Season**, **Non-Season** und
+  **Aus**. Das Overlay zeigt dann die aktuelle und nächste Terror Zone (siehe
+  Abschnitt [Terror Zone](#terror-zone)).
+
+## Item-Icons
+
+Die Item-Grafiken von D2R sind Blizzards geistiges Eigentum und **nicht
+enthalten**. Lege eigene Icons in `public/assets/items/` ab (Dateinamen wie im
+Katalog-Seed `server/catalog-seed.js`). Sobald eine Datei vorhanden ist, zeigt das Overlay
+automatisch das echte Bild; fehlt sie, erscheint ein Platzhalter in der passenden
+D2-Qualitätsfarbe — es funktioniert also auch ganz ohne Bilder sofort.
+
+### Wie müssen die Dateien heißen?
+
+Das Overlay lädt ein Icon stur unter `public/assets/items/<icon>`, wobei `<icon>`
+**exakt** der Wert des `icon`-Feldes des Items in `server/catalog-seed.js` ist.
+Der Dateiname muss also zeichengenau passen — inklusive Endung.
+
+Die Namen im Katalog folgen durchgehend diesem Muster:
+
+| Regel | Beispiel |
+| --- | --- |
+| Kleinbuchstaben, ASCII, keine Umlaute | `shako.png` |
+| Leerzeichen werden zu Bindestrichen | `vampire-gaze.png` |
+| Apostrophe entfallen ersatzlos | `Death's Web` → `deaths-web.png` |
+| Gebräuchliche Kurzform, wo es eine gibt | `Stone of Jordan` → `soj.png` |
+| Runen mit Präfix `rune-` | `rune-ber.png`, `rune-jah.png` |
+| Set-Items mit Set-Kurzform als Präfix | `tals-amu.png`, `aldurs-advance.png` |
+| Facetten/Juwelen mit Typ-Präfix | `facet-cold.png`, `jewel-defenders.png` |
+
+Erlaubt ist jedes Bildformat, das der Browser darstellt (PNG, WebP, GIF, JPG,
+SVG) — die Endung muss aber mit dem Katalog übereinstimmen. Fast alle Einträge
+erwarten `.png`; einzige Ausnahme ist der mitgelieferte `grand-charm.svg`.
+
+**Die verbindliche Liste bekommst du dir erzeugt, statt sie abzutippen:**
+
+```bash
+npm run icons:check                         # listet alle noch fehlenden Dateinamen
+node scripts/import-icons.mjs --template    # schreibt ALLE erwarteten Namen nach icons.urls.json
+```
+
+> Du musst nicht alle Icons liefern. Für jedes fehlende Bild zeichnet das Overlay
+> einen Platzhalter in der jeweiligen D2-Qualitätsfarbe (Initialen bzw.
+> Runen-Kürzel), das Overlay funktioniert also auch ganz ohne Bilder.
+
+### Icons komfortabel einsortieren
+
+Damit du Bilder nicht einzeln umbenennen musst, gibt es ein Hilfsskript:
+
+```bash
+# Zeigt, welche Icons noch fehlen:
+npm run icons:check
+
+# a) Importiert passende Bilder aus einem eigenen Ordner nach public/assets/items/:
+node scripts/import-icons.mjs /pfad/zu/deinen/bildern
+
+# b) Lädt Bilder aus einer URL-Liste herunter:
+node scripts/import-icons.mjs --template          # erzeugt icons.urls.json (alle Icons, leere URLs)
+#   -> URLs eintragen, dann:
+node scripts/import-icons.mjs icons.urls.json
+```
+
+Der Abgleich ist tolerant gegenüber Groß-/Kleinschreibung, Bindestrichen/
+Unterstrichen und der Dateiendung (`png`/`webp`/`gif`/`jpg`) und schreibt jedes
+Bild auf den exakten Zielnamen aus dem Katalog-Seed (`server/catalog-seed.js`).
+
+**URL-Liste (`icons.urls.json`):** Ein einfaches Objekt `{ "shako.png": "https://…" }`.
+`--template` legt es mit allen erwarteten Icons und leeren URLs an — du trägst nur
+die Adressen ein (leer gelassene Einträge werden übersprungen). Der Download prüft
+den `Content-Type` (nur Bilder) und lädt höflich mit begrenzter Parallelität.
+
+> Hinweis: Du gibst selbst die Quelle an — einen Ordner mit Bildern, die du
+> verwenden darfst (z. B. aus deiner eigenen D2R-Installation extrahiert), oder
+> URLs von Quellen, deren Nutzungsbedingungen das erlauben. Die Grafiken bleiben
+> Blizzards Eigentum und werden nicht mitgeliefert.
+
+### Icons freistellen (Hintergrund transparent)
+
+Viele Quell-Bilder liegen auf einem soliden (oft schwarzen) Hintergrund oder
+haben viel transparenten Rand (dann wirkt das Item im Overlay zu klein). Ein
+kleines Python-Skript erledigt beides: es entfernt den Hintergrund (Flood-Fill
+vom Bildrand, sodass dunkle Teile **innerhalb** des Items erhalten bleiben) und
+**beschneidet** das Bild anschließend auf den sichtbaren Inhalt:
+
+```bash
+pip3 install Pillow                         # einmalig (Voraussetzung)
+python3 scripts/cutout-icons.py             # stellt alle Icons in public/assets/items/ frei
+python3 scripts/cutout-icons.py shako.png   # oder einzelne Dateien
+THRESH=80 python3 scripts/cutout-icons.py    # Farbtoleranz erhöhen (Default 60)
+```
+
+Das Skript ist idempotent (bereits transparente Bilder werden übersprungen) und
+läuft typischerweise **nach** dem Download:
+
+```bash
+node scripts/import-icons.mjs icons.urls.json   # lädt Bilder (mit Hintergrund)
+python3 scripts/cutout-icons.py                 # stellt sie frei
+```
+
+> Wichtig: `icons.urls.json` verweist auf die Original-URLs **mit** Hintergrund.
+> Ein erneuter Download überschreibt die freigestellten Dateien — danach also
+> wieder `cutout-icons.py` ausführen.
+
+## Terror Zone
+
+Das Overlay kann die aktuelle und nächste **Terror Zone** anzeigen. Die Daten
+kommen von **[d2emu.com](https://www.d2emu.com/)** und werden automatisch jeweils
+kurz nach **:00** und **:30** aktualisiert (in diesem Takt rotieren die Trackerdaten).
+
+**Season vs. Non-Season:** Online ist die Terror Zone für Ladder (Season) und
+Non-Ladder **identisch** — es gibt nur einen Feed. Der Umschalter im Steuerpanel
+(`Season` / `Non-Season` / `Aus`) wechselt deshalb nur die **Beschriftung** im
+Overlay bzw. blendet die Anzeige aus. Standard ist `Aus`.
+
+### Zugang (Token)
+
+Die d2emu-API verlangt einen kostenlosen **Username + Token** (anzufragen über den
+d2emu-Discord, siehe deren [Terms](https://www.d2emu.com/terms)). Beides wird über
+Umgebungsvariablen gesetzt:
+
+```bash
+D2EMU_USERNAME="dein-name" D2EMU_TOKEN="dein-token" npm start
+```
+
+Ohne diese Variablen bleibt die Terror-Zone-Anzeige einfach deaktiviert — der Rest
+des Overlays funktioniert normal weiter. Sollte d2emu andere Header-Namen vergeben,
+passt du sie in `server/terrorzone.js` an (Konstanten im `fetch`-Aufruf).
+
+> Hinweis: Die Zonen-IDs werden in `server/terrorzone.js` auf lesbare Namen
+> abgebildet. Taucht eine unbekannte ID auf, erscheint sie als „Zone &lt;id&gt;",
+> bis das Mapping ergänzt wird.
+
+## Datenspeicherung
+
+Runs, Counter, Farm-Zeiten, gefundene Items und das **Fund-Logbuch** (jeder Fund
+mit Zeitstempel) werden in einer lokalen **SQLite-Datenbank** (`server/data/state.db`)
+gespeichert und überleben jeden Neustart. Geschrieben wird **write-through bei jeder Aktion** (kein Debounce, im
+WAL-Modus) — selbst die letzte Aktion direkt vor einem harten Beenden (Strg+C)
+geht damit nicht verloren.
+
+- Die Dateien `state.db-wal` / `state.db-shm` gehören zur Datenbank (WAL-Journal)
+  und sollten beim Sichern/Kopieren mitgenommen werden.
+- Eine ältere `server/data/state.json` (aus der vorherigen Version) wird beim ersten
+  Start **automatisch einmalig importiert** und anschließend zu
+  `state.json.bak` umbenannt.
+- Absichtlich nicht gespeichert wird nur der laufende Farm-Timer-Anker (damit
+  Server-Downtime nicht als Farm-Zeit zählt) sowie die Terror-Zone (wird beim Start
+  neu abgerufen).
+
+> Voraussetzung: `npm install` installiert `better-sqlite3` (liefert für gängige
+> Plattformen vorgebaute Binärdateien; nur bei seltenem Fallback wird kompiliert —
+> dann werden Build-Tools wie die Xcode Command Line Tools benötigt).
+
+## Schriftart
+
+Für den klassischen Diablo-Look (gemeißelte Versalien-Serife) liegt die Schrift
+**Cinzel** lokal bei (`public/assets/fonts/Cinzel.ttf`) und wird per `@font-face`
+geladen — Overlay und Steuerpanel nutzen sie ohne externen Abruf, also auch in der
+OBS-Browserquelle. Cinzel steht unter der **SIL Open Font License** (Lizenztext:
+`public/assets/fonts/OFL.txt`) und darf frei mitgeliefert werden.
+
+> Hinweis: Die originale Diablo-Logoschrift („Exocet") ist nicht frei lizenziert
+> und daher nicht enthalten. Cinzel ist die optisch sehr nahe, legale Alternative.
+
+## Daten anpassen
+
+Run-Ziele, Items/Runen/Runenwörter und Terror-Zonen liegen **vollständig in der
+SQLite-DB** und werden zur Laufzeit von dort gelesen (über `/api/items`,
+`/api/targets`, `/api/zones`). Befüllt wird die DB beim ersten Start aus dem
+Katalog-**Seed-Modul** `server/catalog-seed.js` — der einzigen Quelle. (Eine leere
+DB muss einmalig aus einer Quelle befüllt werden; danach ist die DB maßgeblich.)
+
+Jeder Eintrag in `catalog-seed.js` trägt seine Namen je Sprache, z. B.:
+
+```js
+{ id: 'u-shako', quality: 'unique', icon: 'shako.png',
+  name: { en: 'Harlequin Crest (Shako)', de: 'Harlekin-Helm (Shako)', fr: '…', es: '…', zh: '…' },
+  type: { en: 'Helm', de: 'Helm', fr: 'Heaume', es: 'Yelmo', zh: '头盔' } }
+{ id: 'r-ber', quality: 'rune', rune: 'Ber', name: { … }, type: 'Rune' }
+{ id: 'rw-enigma', quality: 'runeword', name: { … }, type: 'Jah Ith Ber' }
+```
+
+- `quality`, `icon`, `rune` und die **Rune-Sequenz** eines Runenworts (`type` als
+  String) sind sprachunabhängig/stabil und werden nicht übersetzt.
+- Bei `unique`/`set` ist `type` ein Objekt (übersetztes Slot-Label).
+- **Nach dem Bearbeiten** von `catalog-seed.js` die Konstante `CATALOG_SEED_VERSION`
+  in `server/db.js` erhöhen — dann wird der Katalog beim nächsten Start neu
+  eingespielt (überschreibt die Katalog-Tabellen; deine Runs/Funde bleiben unberührt).
+
+## Sprachen
+
+Oberfläche und Spieldaten sind in **5 Sprachen** verfügbar: Deutsch, Englisch,
+Französisch, Spanisch, vereinfachtes Chinesisch. Im Steuerpanel gibt es **zwei
+getrennte Umschalter** (beide werden gespeichert und gelten live für Overlay +
+Steuerpanel, Standard **Deutsch**):
+
+- **Datensprache** — Namen von Zonen, Bossen und Items (aus der DB).
+- **UI-Sprache** — alle statischen Oberflächentexte.
+
+Die statischen Texte liegen im Frontend-Modul `public/shared/i18n.js`
+(`t(key, params)` mit Fallback-Kette gewählte Sprache → Deutsch → Englisch). Die
+Spieldaten-Übersetzungen stehen im Katalog-Seed `server/catalog-seed.js` (siehe oben).
+
+> Hinweis: Die Übersetzungen sind nach den offiziellen D2R-Begriffen angelegt;
+> einzelne Item-Namen (v. a. FR/ZH) können abweichen und lassen sich in
+> `server/catalog-seed.js` korrigieren. Fehlt eine Übersetzung, greift der Fallback (nie leer).
+
+## Projektstruktur
+
+```
+d2-streamoverlay/
+├── server/            # Node-Server (Express + ws), SQLite (db.js)
+│   └── catalog-seed.js # Stammdaten (Items/Targets/Zonen, mehrsprachig) -> SQLite
+├── public/            # Overlay, Steuerpanel, geteilter WS-Client (+ i18n.js), Assets
+└── README.md
+```
+
+## Lizenz
+
+MIT. Diablo II: Resurrected und alle zugehörigen Marken/Grafiken sind Eigentum von
+Blizzard Entertainment.

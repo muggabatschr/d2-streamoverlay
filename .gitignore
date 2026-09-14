@@ -1,0 +1,18 @@
+node_modules/
+server/data/state.json
+server/data/state.json.bak
+server/data/*.bak
+server/data/state.db
+server/data/state.db-wal
+server/data/state.db-shm
+icons.urls.json
+*.log
+.DS_Store
+.idea/
+
+# Item-Icons: D2R-Grafiken sind Blizzards Eigentum und werden nicht mitgeliefert.
+# Siehe README ("Item-Icons") — Dateinamen stammen aus server/catalog-seed.js.
+# Ausnahmen: die Anleitung und der selbst gezeichnete SVG-Platzhalter.
+public/assets/items/*
+!public/assets/items/README.md
+!public/assets/items/grand-charm.svg

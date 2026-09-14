@@ -1,0 +1,359 @@
+/* Overlay-Styles — klassischer D2-Gothic-Look. Transparenter Hintergrund,
+   damit es in OBS sauber über dem Gameplay liegt. */
+
+/* Cinzel: frei lizenzierte (SIL OFL) Versalien-Serife im Trajan-/Diablo-Stil.
+   Lokal gebündelt (assets/fonts/), damit auch die OBS-Browserquelle sie ohne
+   Internet-Abruf nutzt. Variable Font: deckt 400–900 ab. */
+@font-face {
+  font-family: 'Cinzel';
+  src: url('assets/fonts/Cinzel.ttf') format('truetype');
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --gold: #c7b377;
+  --gold-bright: #e8d9a0;
+  --stone-dark: rgba(12, 10, 8, 0.82);
+  --stone-mid: rgba(28, 22, 16, 0.78);
+  --border-gold: rgba(199, 179, 119, 0.55);
+  --shadow: 0 0 14px rgba(0, 0, 0, 0.7);
+
+  --q-unique: #c7b377;
+  --q-set: #00ff00;
+  --q-rare: #ffff64;
+  --q-magic: #6969ff;
+  --q-rune: #ff8000;
+  --q-runeword: #d9b34a;
+  --q-crafted: #ff8000;
+  --q-normal: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  background: transparent;
+  font-family: 'Trajan Pro', 'Cinzel', 'Times New Roman', serif;
+  color: var(--gold);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  user-select: none;
+}
+
+.overlay {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  width: 340px;
+}
+
+/* Funde-Laufband (vertikaler Ticker im „Funde"-Panel, unter dem Verlauf) */
+.ticker-viewport {
+  height: 96px; /* ~3 Zeilen sichtbar */
+  overflow: hidden;
+  /* Weiche Randübergänge oben/unten: Items tauchen auf/ab statt hart zu schneiden. */
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 12%, #000 88%, transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 12%, #000 88%, transparent);
+}
+.ticker-track {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  will-change: transform;
+  animation: ticker-marquee linear infinite;
+}
+.ticker-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 6px; /* gleicher Abstand an der Nahtstelle -> nahtlose Schleife */
+}
+.ticker-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+}
+.ticker-item .item-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Vertikaler Durchlauf von oben nach unten (zwei identische Gruppen -> nahtlos). */
+@keyframes ticker-marquee {
+  from {
+    transform: translateY(-50%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+/* Bei reduzierter Bewegung nicht animieren (Barrierefreiheit). */
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none;
+  }
+}
+
+.panel {
+  background: linear-gradient(180deg, var(--stone-mid), var(--stone-dark));
+  border: 2px solid var(--border-gold);
+  border-radius: 8px;
+  box-shadow: var(--shadow), inset 0 0 24px rgba(0, 0, 0, 0.6);
+  padding: 12px 16px;
+}
+
+/* Header */
+.header {
+  text-align: center;
+}
+.act {
+  font-size: 13px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(199, 179, 119, 0.7);
+}
+.target {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--gold-bright);
+  text-shadow: 0 0 10px rgba(199, 179, 119, 0.4);
+  margin-top: 2px;
+}
+
+/* Terror Zone */
+.tz-title {
+  font-size: 12px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: rgba(199, 179, 119, 0.65);
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(199, 179, 119, 0.25);
+  padding-bottom: 6px;
+  text-align: center;
+}
+.tz-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.tz-row + .tz-row {
+  margin-top: 4px;
+}
+.tz-when {
+  flex: 0 0 60px;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(199, 179, 119, 0.6);
+}
+.tz-zone {
+  flex: 1;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--gold-bright);
+  text-shadow: 0 0 8px rgba(199, 179, 119, 0.35);
+}
+.tz-row-next .tz-zone {
+  font-size: 15px;
+  font-weight: 400;
+  color: rgba(199, 179, 119, 0.8);
+  text-shadow: none;
+}
+
+/* Kompakte Statistik-Zeile: Runs · Heute · Gesamt (drei Spalten in einem Panel) */
+.stats-box {
+  display: flex;
+  align-items: center;
+}
+.stat {
+  flex: 1;
+  text-align: center;
+  padding: 0 4px;
+}
+.stat + .stat {
+  border-left: 1px solid rgba(199, 179, 119, 0.25);
+}
+.stat-label {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(199, 179, 119, 0.6);
+  margin-bottom: 2px;
+}
+/* Live-Run-Counter — etwas größer als die Aggregat-Zahlen (Blickfang). */
+.counter {
+  font-size: 34px;
+  line-height: 1;
+  font-weight: 700;
+  color: var(--gold-bright);
+  text-shadow: 0 0 14px rgba(199, 179, 119, 0.5);
+  font-variant-numeric: tabular-nums;
+  transition: transform 0.18s ease, text-shadow 0.18s ease;
+}
+.counter.pop {
+  transform: scale(1.18);
+  text-shadow: 0 0 24px rgba(255, 230, 150, 0.9);
+}
+.stat-count {
+  font-size: 26px;
+  line-height: 1;
+  font-weight: 700;
+  color: var(--gold-bright);
+  text-shadow: 0 0 12px rgba(199, 179, 119, 0.4);
+  font-variant-numeric: tabular-nums;
+}
+.stat-time {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(199, 179, 119, 0.8);
+  margin-top: 1px;
+}
+
+/* Items */
+.items-title {
+  font-size: 12px;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: rgba(199, 179, 119, 0.65);
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(199, 179, 119, 0.25);
+  padding-bottom: 6px;
+}
+.items {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 360px;
+  overflow: hidden;
+}
+.items li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  animation: itemIn 0.35s ease;
+}
+.items .qty-badge {
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold-bright);
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-gold);
+  border-radius: 10px;
+  padding: 0 7px;
+  font-variant-numeric: tabular-nums;
+}
+/* Zusatz (Skiller-Affix / Facet-Wert) als kleine Beschriftung neben dem Namen. */
+.ticker-item .ticker-variant {
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gold-bright);
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-gold);
+  border-radius: 6px;
+  padding: 0 6px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+@keyframes itemIn {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.item-name.q-unique { color: var(--q-unique); }
+.item-name.q-set { color: var(--q-set); }
+.item-name.q-rare { color: var(--q-rare); }
+.item-name.q-magic { color: var(--q-magic); }
+.item-name.q-rune { color: var(--q-rune); }
+.item-name.q-runeword { color: var(--q-runeword); }
+.item-name.q-crafted { color: var(--q-crafted); }
+.item-name.q-normal { color: var(--q-normal); }
+
+/* Item-Icon mit Bild oder farbigem Fallback */
+.item-icon {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.item-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.item-icon--fallback {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1a1a1a;
+  border: 1px solid rgba(0, 0, 0, 0.4);
+  text-shadow: none;
+}
+.item-icon--fallback.q-unique { background: var(--q-unique); }
+.item-icon--fallback.q-set { background: var(--q-set); }
+.item-icon--fallback.q-rare { background: var(--q-rare); }
+.item-icon--fallback.q-magic { background: var(--q-magic); color: #fff; }
+.item-icon--fallback.q-rune { background: var(--q-rune); }
+.item-icon--fallback.q-runeword { background: var(--q-runeword); }
+.item-icon--fallback.q-crafted { background: var(--q-crafted); }
+.item-icon--fallback.q-normal { background: var(--q-normal); }
+
+/* Verlauf */
+.history {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.history-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 15px;
+  color: rgba(199, 179, 119, 0.85);
+}
+.history-row.active .hname {
+  color: var(--gold-bright);
+  text-shadow: 0 0 8px rgba(199, 179, 119, 0.4);
+}
+.history-row .hname {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.history-row .hcount {
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: rgba(199, 179, 119, 0.6);
+}
+.history-row .htime {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  color: var(--gold-bright);
+}
+
+/* Versteckte Bereiche (über Panel-Toggles steuerbar) */
+.hidden {
+  display: none !important;
+}

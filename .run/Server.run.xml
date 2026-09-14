@@ -1,0 +1,9 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Server" type="NodeJSConfigurationType" application-parameters="" path-to-js-file="server/index.js" working-dir="$PROJECT_DIR$">
+    <node-options value="" />
+    <envs>
+      <env name="PORT" value="3777" />
+    </envs>
+    <method v="2" />
+  </configuration>
+</component>

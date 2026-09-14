@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-i18n="control.title">D2R Overlay — Steuerpanel</title>
+    <link rel="stylesheet" href="control.css" />
+  </head>
+  <body>
+    <div class="topbar">
+      <h1 data-i18n="control.heading">D2R Overlay — Steuerung</h1>
+      <div class="status" id="status" data-state="connecting" data-i18n="status.connecting">verbinde…</div>
+    </div>
+
+    <main class="layout">
+      <!-- Zeile 1: Counter · Funde erfassen · Run-Ziel -->
+      <div class="row row-top">
+        <!-- Counter -->
+        <section class="card counter-card">
+          <h2 data-i18n="counter.heading">Counter</h2>
+          <div class="active-target" id="active-target" data-i18n="target.none">— kein Ziel —</div>
+          <div class="counter-display" id="counter-display">0</div>
+          <div class="farm-time" id="counter-time" data-i18n-title="title.farmTime" title="Farm-Zeit für dieses Ziel">00:00:00</div>
+          <div class="counter-controls">
+            <button class="btn big" id="dec">−</button>
+            <button class="btn big primary" id="inc">+</button>
+          </div>
+          <button class="btn ghost" id="pause" data-i18n="btn.pause">Pause</button>
+          <button class="btn ghost" id="reset" data-i18n="btn.reset">Zurücksetzen</button>
+          <p class="hint"><span data-i18n="hint.keysPrefix">Tasten:</span> <kbd>+</kbd> / <kbd>−</kbd></p>
+        </section>
+
+        <!-- Item-Erfassung -->
+        <section class="card items-card">
+          <h2 data-i18n="items.heading">Funde erfassen</h2>
+          <div class="season-row">
+            <label class="season-field">
+              <span class="season-label" data-i18n="season.label">Season</span>
+              <input type="number" id="season" class="season-input" min="1" max="999" step="1" value="14" />
+            </label>
+            <label class="offline-toggle">
+              <input type="checkbox" id="offline" />
+              <span data-i18n="offline.label">Offline</span>
+            </label>
+          </div>
+          <input type="search" id="item-search" data-i18n-placeholder="search.placeholder" placeholder="Item suchen… (z. B. Shako, Ber, Tal)" autocomplete="off" />
+          <div class="filters" id="filters">
+            <button class="chip active" data-q="all" data-i18n="filter.all">Alle</button>
+            <button class="chip" data-q="unique" data-i18n="filter.unique">Unique</button>
+            <button class="chip" data-q="set" data-i18n="filter.set">Set</button>
+            <button class="chip" data-q="rune" data-i18n="filter.rune">Runen</button>
+            <button class="chip" data-q="runeword" data-i18n="filter.runeword">Runewords</button>
+            <button class="chip" data-q="magic" data-i18n="filter.skiller">Skiller</button>
+          </div>
+          <div class="variant-prompt hidden" id="variant-prompt"></div>
+          <div class="item-picker" id="item-picker"></div>
+        </section>
+
+        <!-- Ziel-Auswahl -->
+        <section class="card targets-card">
+          <h2 data-i18n="targets.heading">Run-Ziel</h2>
+          <div class="acts" id="acts"></div>
+        </section>
+      </div>
+
+      <!-- Zeile 2: Verlauf · Gefunden -->
+      <div class="row row-history">
+        <!-- Verlauf -->
+        <section class="card history-card">
+          <div class="found-head">
+            <h2 data-i18n="history.heading">Verlauf</h2>
+            <button class="btn ghost small" id="clear-runs" data-i18n="btn.clearAll">Alle löschen</button>
+          </div>
+          <p class="hint" style="margin:0 0 10px" data-i18n="hint.history">Eintrag anklicken, um den Run fortzusetzen.</p>
+          <ul class="history-list" id="history-list"></ul>
+        </section>
+
+        <!-- Gefundene Items -->
+        <section class="card found-card">
+          <div class="found-head">
+            <h2 data-i18n="found.heading">Gefunden</h2>
+            <button class="btn ghost small" id="clear-items" data-i18n="btn.clearAll">Alle löschen</button>
+          </div>
+          <ul class="found-list" id="found-list"></ul>
+        </section>
+      </div>
+
+      <!-- Fund-Verlauf (historisches Logbuch: wann wurde was gefunden) -->
+      <div class="row row-finds">
+        <section class="card finds-card">
+          <div class="found-head">
+            <h2 data-i18n="finds.heading">Fund-Verlauf</h2>
+            <div class="found-head-actions">
+              <a class="btn ghost small" href="finds.html" target="_blank" rel="noopener" data-i18n="finds.archive">Fund-Archiv</a>
+              <button class="btn ghost small" id="clear-finds" data-i18n="btn.clearAll">Alle löschen</button>
+            </div>
+          </div>
+          <div class="finds-log" id="finds-log"></div>
+        </section>
+      </div>
+
+      <!-- Zeile 3: Anzeige-Einstellungen -->
+      <div class="row row-display">
+        <section class="card settings-card">
+          <h2 data-i18n="display.heading">Anzeige</h2>
+          <label class="toggle">
+            <input type="checkbox" id="toggle-counter" checked />
+            <span data-i18n="toggle.counter">Counter im Overlay zeigen</span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" id="toggle-items" checked />
+            <span data-i18n="toggle.items">Funde im Overlay zeigen</span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" id="toggle-history" checked />
+            <span data-i18n="toggle.history">Verlauf im Overlay zeigen</span>
+          </label>
+        </section>
+
+        <!-- Sprache -->
+        <section class="card lang-card">
+          <h2 data-i18n="lang.ui">UI-Sprache</h2>
+          <label class="lang-row">
+            <span class="lang-label" data-i18n="lang.data">Datensprache</span>
+            <select id="data-lang" class="lang-select">
+              <option value="de">Deutsch</option>
+              <option value="en">English</option>
+              <option value="fr">Français</option>
+              <option value="es">Español</option>
+              <option value="zh">中文</option>
+            </select>
+          </label>
+          <label class="lang-row">
+            <span class="lang-label" data-i18n="lang.ui">UI-Sprache</span>
+            <select id="ui-lang" class="lang-select">
+              <option value="de">Deutsch</option>
+              <option value="en">English</option>
+              <option value="fr">Français</option>
+              <option value="es">Español</option>
+              <option value="zh">中文</option>
+            </select>
+          </label>
+        </section>
+
+        <!-- Terror Zone -->
+        <section class="card tz-card">
+          <h2 data-i18n="tz.heading">Terror Zone</h2>
+          <div class="tz-modes" id="tz-modes">
+            <button class="chip" data-mode="season" data-i18n="tzmode.season">Season</button>
+            <button class="chip" data-mode="nonseason" data-i18n="tzmode.nonseason">Non-Season</button>
+            <button class="chip" data-mode="off" data-i18n="tzmode.off">Aus</button>
+          </div>
+          <div class="tz-readout">
+            <div class="tz-line"><span class="tz-k" data-i18n="tz.now">Jetzt</span><span class="tz-v" id="tz-now">—</span></div>
+            <div class="tz-line"><span class="tz-k" data-i18n="tz.next">Nächste</span><span class="tz-v" id="tz-next">—</span></div>
+          </div>
+          <p class="hint" id="tz-hint" data-i18n="tz.hint">Online identisch für Season &amp; Non-Season — der Schalter wechselt nur die Beschriftung im Overlay.</p>
+        </section>
+      </div>
+    </main>
+
+    <script type="module" src="control.js"></script>
+  </body>
+</html>

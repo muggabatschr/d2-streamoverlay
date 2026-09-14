@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-i18n="app.title">D2R Overlay</title>
+    <link rel="stylesheet" href="overlay.css" />
+  </head>
+  <body>
+    <div class="overlay" id="overlay">
+      <header class="panel header" id="header">
+        <div class="target" id="target" data-i18n="overlay.noTarget">Kein Ziel gewählt</div>
+      </header>
+
+      <section class="panel tz-box" id="tz-box">
+        <div class="tz-title" id="tz-title" data-i18n="tz.heading">Terror Zone</div>
+        <div class="tz-row">
+          <span class="tz-when" data-i18n="tz.now">Jetzt</span>
+          <span class="tz-zone" id="tz-current">—</span>
+        </div>
+        <div class="tz-row tz-row-next">
+          <span class="tz-when" data-i18n="tz.next">Nächste</span>
+          <span class="tz-zone" id="tz-next">—</span>
+        </div>
+      </section>
+
+      <section class="panel stats-box" id="stats-box">
+        <div class="stat">
+          <div class="stat-label" data-i18n="counter.runs">Runs</div>
+          <div class="counter" id="counter">0</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label" data-i18n="summary.today">Heute</div>
+          <div class="stat-count" id="today-count">0</div>
+          <div class="stat-time" id="today-time">00:00:00</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label" data-i18n="summary.total">Gesamt</div>
+          <div class="stat-count" id="total-count">0</div>
+          <div class="stat-time" id="total-time">00:00:00</div>
+        </div>
+      </section>
+
+      <section class="panel history-box" id="history-box">
+        <div class="items-title" data-i18n="overlay.history">Verlauf</div>
+        <ul class="history" id="history"></ul>
+      </section>
+
+      <!-- Funde als vertikales Laufband (unter dem Verlauf, gleiche Box-Breite) -->
+      <section class="panel items-box" id="items-box">
+        <div class="items-title" data-i18n="overlay.finds">Funde</div>
+        <div class="ticker-viewport">
+          <div class="ticker-track" id="items"></div>
+        </div>
+      </section>
+    </div>
+
+    <script type="module" src="overlay.js"></script>
+  </body>
+</html>

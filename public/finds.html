@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-i18n="finds.archive">Fund-Archiv</title>
+    <link rel="stylesheet" href="control.css" />
+    <link rel="stylesheet" href="finds.css" />
+  </head>
+  <body>
+    <div class="topbar">
+      <h1 data-i18n="finds.archive">Fund-Archiv</h1>
+      <div class="status" id="status" data-state="connecting" data-i18n="status.connecting">verbinde…</div>
+    </div>
+
+    <main class="layout">
+      <!-- Filter nach Season / Offline -->
+      <section class="card">
+        <div class="filter-bar" id="filter-bar"></div>
+        <div class="finds-summary" id="finds-summary"></div>
+      </section>
+
+      <!-- Item-Aufstellung (was, wie oft) -->
+      <section class="card">
+        <h2 data-i18n="finds.byItem">Nach Item</h2>
+        <div class="finds-breakdown" id="finds-breakdown"></div>
+      </section>
+
+      <!-- Chronologische Liste (nach Tag gruppiert) -->
+      <section class="card">
+        <h2 data-i18n="finds.heading">Fund-Verlauf</h2>
+        <div class="finds-log" id="finds-log"></div>
+      </section>
+    </main>
+
+    <script type="module" src="finds.js"></script>
+  </body>
+</html>
