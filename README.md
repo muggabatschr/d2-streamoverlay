@@ -170,6 +170,26 @@ node scripts/import-icons.mjs --template    # schreibt ALLE erwarteten Namen nac
 > einen Platzhalter in der jeweiligen D2-Qualitätsfarbe (Initialen bzw.
 > Runen-Kürzel), das Overlay funktioniert also auch ganz ohne Bilder.
 
+### Welche Quelle liefert brauchbare Icons?
+
+Für den Überblick, was ein Icon taugt, zählen drei Dinge — Auflösung, **echte
+Item-Farbe** und **Unterscheidbarkeit** (zwei verschiedene Funde dürfen im Overlay
+nicht gleich aussehen):
+
+| Quelle | Auflösung | Eigenart |
+| --- | --- | --- |
+| `diablo2.io` | ~110–230 px | **Echte Unique-/Set-Grafik** je Item, also die Farbe aus dem Spiel (Shako grün, Leviathan grün, Dracul's Grasp rot). Empfohlen. |
+| `diablo2.wiki.fextralife.com` | ~200–350 px | Höher aufgelöst, zeigt aber das **Basis-Item** statt des Uniques — falsche Farbe und mehrere Uniques teilen sich ein Bild. |
+| altes Diablo-Wiki (`static.wikia.nocookie.net`) | ~25–60 px | Original-Sprites aus D2 Classic. Zu klein fürs Overlay; nach dem Freistellen (siehe unten) oft unbrauchbar. |
+
+Da das Overlay die Icons mit **28 px Kantenlänge** zeichnet, bringt Auflösung
+jenseits von ~110 px nichts mehr — Farbe und Unterscheidbarkeit schlagen sie.
+
+Dass sich einzelne Items trotzdem ein Bild teilen (Amulette, Ringe, Sorc-Orbs,
+manche Stiefel/Gürtel), liegt am Spiel selbst: D2 hat für diese Slots nur eine
+Handvoll Inventar-Grafiken, die alle Uniques mitbenutzen. Das lässt sich mit
+keiner Quelle auflösen.
+
 ### Icons komfortabel einsortieren
 
 Damit du Bilder nicht einzeln umbenennen musst, gibt es ein Hilfsskript:
