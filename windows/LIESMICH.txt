@@ -56,7 +56,13 @@ Alles erscheint sofort im Overlay. Am Handy: dieselbe Adresse, aber statt
 
 4. Beenden
 ----------
-Startmenue -> "D2 Stream-Overlay beenden".
+Am einfachsten im Steuerpanel oben rechts auf "Programm beenden".
+
+Alternativ: Startmenue -> "D2 Stream-Overlay beenden".
+
+Das Programm laeuft ohne eigenes Fenster - im Task-Manager siehst du nur einen
+Eintrag "node.exe". Den musst du aber nicht suchen, einer der beiden Wege oben
+beendet ihn sauber (und speichert vorher).
 
 
 5. Wo liegen meine Daten?

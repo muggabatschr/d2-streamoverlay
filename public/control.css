@@ -493,6 +493,12 @@ kbd {
   color: var(--gold-bright);
 }
 
+/* Ausgeblendete Bereiche. Fehlte bisher ganz — der Variant-Dialog trug zwar die
+   Klasse, blieb aber als leerer 22-px-Kasten stehen. */
+.hidden {
+  display: none !important;
+}
+
 /* Variant-Prompt (Skiller-Affix / Facet-Wert beim Loggen) */
 .variant-prompt {
   background: #15110b;
@@ -860,4 +866,48 @@ a.btn {
 }
 .contest-actions .btn {
   flex: 1;
+}
+
+/* --- Beenden -------------------------------------------------------------
+   Die Windows-Variante startet ohne Fenster; ohne diesen Knopf bliebe nur der
+   node-Prozess im Task-Manager. */
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.quit-btn {
+  border-color: rgba(255, 138, 138, 0.45);
+  color: #ff8a8a;
+}
+.quit-btn:hover {
+  background: rgba(255, 138, 138, 0.12);
+}
+/* Vollflächige Schicht nach dem Beenden — das Panel ist ab dann tot. */
+.quit-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 8, 6, 0.92);
+}
+.quit-box {
+  text-align: center;
+  padding: 28px 40px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: linear-gradient(180deg, var(--bg-card-2), var(--bg-card));
+}
+.quit-title {
+  font-family: 'Cinzel', serif;
+  font-size: 22px;
+  letter-spacing: 1px;
+  color: var(--gold-bright);
+}
+.quit-hint {
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--muted);
 }

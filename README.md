@@ -57,7 +57,7 @@ liegt eine Anleitung bei (Startmenü → *Anleitung*, bzw. `windows\LIESMICH.txt
 | --- | --- |
 | Installiert nach | `C:\Program Files\D2-Overlay` (ohne Adminrechte: Nutzerordner) |
 | Daten | `%APPDATA%\D2-Overlay` — bleiben bei Update und Deinstallation erhalten |
-| Beenden | Startmenü → *D2 Stream-Overlay beenden* |
+| Beenden | Knopf *Programm beenden* oben rechts im Steuerpanel, oder Startmenü → *D2 Stream-Overlay beenden* |
 | Bei Problemen | `windows\Start.bat` startet mit sichtbarer Konsole und zeigt Fehler |
 
 Beim ersten Start meldet sich Windows zweimal: **SmartScreen** („Unbekannter Herausgeber",

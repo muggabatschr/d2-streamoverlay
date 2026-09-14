@@ -9,7 +9,19 @@
   <body>
     <div class="topbar">
       <h1 data-i18n="control.heading">D2R Overlay — Steuerung</h1>
-      <div class="status" id="status" data-state="connecting" data-i18n="status.connecting">verbinde…</div>
+      <div class="topbar-right">
+        <div class="status" id="status" data-state="connecting" data-i18n="status.connecting">verbinde…</div>
+        <button class="btn ghost small quit-btn" id="quit" data-i18n="btn.quit">Programm beenden</button>
+      </div>
+    </div>
+
+    <!-- Nach dem Beenden liegt diese Schicht über allem: ohne sie würde das Panel
+         nur „getrennt" zeigen und endlos weiter zu verbinden versuchen. -->
+    <div class="quit-screen hidden" id="quit-screen">
+      <div class="quit-box">
+        <div class="quit-title" data-i18n="quit.done">Programm beendet.</div>
+        <div class="quit-hint" data-i18n="quit.hint">Du kannst dieses Fenster jetzt schließen.</div>
+      </div>
     </div>
 
     <main class="layout">

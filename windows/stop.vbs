@@ -1,6 +1,8 @@
-' Beendet alle node.exe-Prozesse aus dem Installationsordner — also genau den
-' Overlay-Server, ohne ein anderweitig installiertes Node zu treffen.
+' Startet stop.ps1 ohne sichtbares Fenster. Ziel der Startmenue-Verknuepfung
+' "D2 Stream-Overlay beenden"; der Deinstaller ruft dasselbe auf, damit die
+' laufende node.exe den Programmordner nicht blockiert.
 Set shell = CreateObject("WScript.Shell")
 Set fso = CreateObject("Scripting.FileSystemObject")
-base = fso.GetParentFolderName(fso.GetParentFolderName(WScript.ScriptFullName))
-shell.Run "taskkill /F /FI ""IMAGENAME eq node.exe"" /FI ""PATH eq " & base & """", 0, True
+script = fso.GetParentFolderName(WScript.ScriptFullName) & "\stop.ps1"
+' 0 = verstecktes Fenster, True = warten, bis das Beenden durch ist
+shell.Run "powershell.exe -NoProfile -ExecutionPolicy Bypass -File """ & script & """", 0, True

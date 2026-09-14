@@ -6,6 +6,7 @@
 # die Anleitung soll im Editor des Beschenkten sauber umbrechen.
 *.bat   text eol=crlf
 *.vbs   text eol=crlf
+*.ps1   text eol=crlf
 *.iss   text eol=crlf
 windows/LIESMICH.txt text eol=crlf
 

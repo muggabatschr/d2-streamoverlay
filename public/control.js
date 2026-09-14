@@ -60,6 +60,8 @@ const el = {
   contestReset: document.getElementById('contest-reset'),
   contestShow: document.getElementById('contest-show'),
   contestSetup: document.querySelector('.contest-setup'),
+  quit: document.getElementById('quit'),
+  quitScreen: document.getElementById('quit-screen'),
 };
 
 // Wettbewerb-Timer: Warnschwellen (identisch zum Overlay) — die letzten 5 Minuten
@@ -753,6 +755,24 @@ function renderFinds() {
 
 el.clearFinds.addEventListener('click', () => {
   if (confirm(t('confirm.clearFinds'))) send({ type: 'CLEAR_FINDS' });
+});
+
+// --- Beenden --------------------------------------------------------------
+// Unter Windows läuft das Overlay ohne sichtbares Fenster — ohne diesen Knopf
+// bliebe nur „node.exe im Task-Manager abschießen". Nach dem Beenden wird die
+// WS-Verbindung bewusst geschlossen (sonst versucht der Client endlos zu
+// reconnecten) und eine Abschlussmeldung eingeblendet.
+el.quit.addEventListener('click', async () => {
+  if (!confirm(t('confirm.quit'))) return;
+  el.quit.disabled = true;
+  try {
+    await fetch('api/shutdown', { method: 'POST' });
+  } catch {
+    // Der Server bricht die Verbindung mitten in der Antwort ab — das ist der
+    // Normalfall und kein Fehler.
+  }
+  if (client) client.close();
+  el.quitScreen.classList.remove('hidden');
 });
 
 // --- Init -----------------------------------------------------------------

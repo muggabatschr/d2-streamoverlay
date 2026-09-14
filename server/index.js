@@ -72,6 +72,34 @@ function handleHttpAction(req, res) {
 app.get('/api/action', handleHttpAction);
 app.post('/api/action', handleHttpAction);
 
+// Server beenden. Nötig für die Windows-Variante: dort startet das Overlay über
+// eine Verknüpfung ohne Fenster, es gibt also nichts zum Schließen — im
+// Task-Manager steht nur ein node-Prozess. Das Steuerpanel bekommt dafür einen
+// Knopf, und windows/stop.ps1 ruft denselben Endpoint auf (und beendet den
+// Prozess erst hart, wenn das nicht greift).
+//
+// Hinweis: ungeschützt wie der Rest der Schnittstelle — gedacht für localhost.
+// Wer den Server erreicht, kann ohnehin schon alle Funde löschen.
+app.post('/api/shutdown', (_req, res) => {
+  res.json({ ok: true });
+  console.log('\n  Beenden angefordert — Server wird gestoppt.');
+  // Erst die Antwort rausschreiben lassen, dann geordnet herunterfahren.
+  setTimeout(() => {
+    // Offene WebSockets halten den Server sonst am Leben und server.close()
+    // würde nie zurückkehren.
+    for (const client of wss.clients) {
+      try {
+        client.close();
+      } catch {
+        /* egal, wir gehen ohnehin */
+      }
+    }
+    server.close(() => shutdown());
+    // Reißleine, falls doch eine Verbindung hängen bleibt.
+    setTimeout(shutdown, 1500).unref();
+  }, 100);
+});
+
 wss.on('connection', (ws) => {
   // Initialen State sofort senden.
   ws.send(JSON.stringify({ type: 'state', state: getState() }));
