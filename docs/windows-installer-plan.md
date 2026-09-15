@@ -97,7 +97,8 @@ Läuft auf `windows-latest`, getriggert bei Push eines Tags `v*` (und manuell vi
 ### 6. Doku — `README.md` (ergänzen)
 Neuer Abschnitt „Windows-Installer": woher das Setup kommt (Releases/Artifacts), wie man es
 startet, wo die Daten liegen (`%APPDATA%\D2-Overlay`), Hinweis auf SmartScreen, optionale
-D2EMU-Terror-Zone-Env-Variablen.
+D2EMU-Terror-Zone-Env-Variablen. — *Erledigt; die Env-Variablen sind inzwischen nur noch
+der Zweitweg, siehe Abweichung 5.*
 
 ## Bewusst NICHT enthalten
 - Kein Umbau auf CommonJS, kein pkg/nexe/SEA-Single-Exe.
@@ -170,3 +171,15 @@ Beide Risiken betrafen ausschließlich das native Modul und sind mit dem Wechsel
    OBS-Einrichtung — ohne die steht ein unbedarfter Nutzer vor laufendem Server und
    leerem OBS. Der Deinstaller ruft `stop.vbs` vorab auf, sonst blockiert die laufende
    `node.exe` das Löschen des Programmordners.
+
+5. **Der d2emu-Zugang wird im Steuerpanel eingetragen, nicht über Env-Variablen.** Der
+   Plan sah `D2EMU_USERNAME`/`D2EMU_TOKEN` vor. Für die Windows-Variante ist das
+   unbrauchbar: der Beschenkte müsste die `Start.bat` im schreibgeschützten
+   Programmordner bearbeiten oder Systemvariablen anlegen — beides nichts, was man
+   jemandem zumuten kann, der das Setup doppelklickt. Der Zugang liegt deshalb jetzt
+   im Panel (Karte „Terror Zone" → „Zugang (d2emu)") und wird in der Datenbank unter
+   `%APPDATA%\D2-Overlay` gespeichert, überlebt also auch eine Neuinstallation. Die
+   Env-Variablen funktionieren weiter als Zweitweg für Server-Setups; ein im Panel
+   hinterlegter Zugang hat Vorrang. **An den `windows/`-Dateien war dafür nichts zu
+   ändern** — `launcher.mjs` und `Start.bat` bleiben unberührt, ergänzt wurde nur die
+   `LIESMICH.txt` um Schritt 4 (Zugang anfragen und eintragen).

@@ -54,8 +54,15 @@ Doppelklick auf `Setup-D2-Overlay-<version>.exe`, dann Startmenü → *D2 Stream
 Der Browser öffnet sich von selbst mit dem Steuerpanel. Node ist mit im Paket, es muss
 nichts weiter installiert werden.
 
-Was der Beschenkte danach noch einmalig tut: die Browserquelle in OBS anlegen. Dafür
-liegt eine Anleitung bei (Startmenü → *Anleitung*, bzw. `windows\LIESMICH.txt`).
+Was der Beschenkte danach noch einmalig tut: die Browserquelle in OBS anlegen — und,
+falls er die Terror Zone möchte, seinen d2emu-Zugang im Steuerpanel eintragen (Karte
+*Terror Zone* → *Zugang (d2emu)*). Beides steht in der beiliegenden Anleitung
+(Startmenü → *Anleitung*, bzw. `windows\LIESMICH.txt`).
+
+An den Windows-Dateien ändert der Zugang nichts: er wird im Panel eingetippt und landet
+in der Datenbank unter `%APPDATA%\D2-Overlay`. Die `Start.bat` muss also niemand
+anfassen — im Programmordner unter `C:\Program Files` ginge das ohnehin nur mit
+Adminrechten.
 
 | | |
 | --- | --- |
@@ -66,7 +73,9 @@ liegt eine Anleitung bei (Startmenü → *Anleitung*, bzw. `windows\LIESMICH.txt
 
 Beim ersten Start meldet sich Windows zweimal: **SmartScreen** („Unbekannter Herausgeber",
 weil das Setup nicht signiert ist → *Weitere Informationen* → *Trotzdem ausführen*) und
-eventuell die **Firewall** für Port 3777 (nur lokal, freigeben).
+eventuell die **Firewall** für Port 3777 (freigeben — das betrifft nur eingehende
+Zugriffe im eigenen Netz, etwa vom Handy aufs Steuerpanel). Nach außen verbindet sich
+das Programm ausschließlich zu d2emu, und auch das nur mit hinterlegtem Zugang.
 
 ### Setup bauen
 

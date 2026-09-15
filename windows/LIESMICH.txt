@@ -10,6 +10,9 @@ und ein Wettbewerb-Timer.
 Bedient wird es ueber ein Steuerpanel im Browser - am besten auf einem
 zweiten Monitor oder auf dem Handy.
 
+Alles laeuft auf deinem eigenen Rechner. Die einzige Ausnahme ist die Terror
+Zone, die ihre Daten aus dem Internet holt - siehe Schritt 4.
+
 
 1. Starten
 ----------
@@ -24,8 +27,11 @@ Beim allerersten Start kann Windows zwei Dinge fragen:
     Informationen" klicken, dann "Trotzdem ausfuehren". Das erscheint bei
     jedem Programm ohne gekaufte Herausgeber-Signatur.
 
-  * Windows-Firewall -> "Zugriff zulassen". Das Programm spricht nur mit
-    deinem eigenen Rechner, nicht mit dem Internet.
+  * Windows-Firewall -> "Zugriff zulassen". Dabei geht es darum, dass dein
+    Browser (und dein Handy im selben WLAN) das Steuerpanel erreichen darf.
+    Von aussen aus dem Internet ist nichts erreichbar. Nach draussen fragt
+    das Programm nur bei d2emu nach der Terror Zone - und auch das nur,
+    wenn du den Zugang aus Schritt 4 eingetragen hast.
 
 
 2. In OBS einblenden  (einmalig einrichten)
@@ -53,8 +59,42 @@ Dort waehlst du das Farm-Ziel, zaehlst Runs hoch und traegst Funde ein.
 Alles erscheint sofort im Overlay. Am Handy: dieselbe Adresse, aber statt
 "localhost" die IP deines PCs eintragen (beide im selben WLAN).
 
+Oben rechts gibt es den Knopf "Overlay oeffnen". Der zeigt dir in einem
+neuen Tab, wie das Overlay gerade aussieht - praktisch zum Nachsehen, ohne
+extra in OBS zu wechseln.
 
-4. Beenden
+
+4. Terror Zone einschalten  (optional, einmalig)
+------------------------------------------------
+Die Terror Zone ist die einzige Funktion, die Daten aus dem Internet holt -
+und dafuer brauchst du einen eigenen Zugang. Ohne ihn bleibt die Anzeige
+einfach leer, alles andere funktioniert normal.
+
+So kommst du dran:
+
+ 1. Auf www.d2emu.com den Discord-Link oeffnen und dort um einen API-Zugang
+    bitten. Sag dazu, wofuer du ihn brauchst (ein privates Stream-Overlay).
+    Du bekommst einen Benutzernamen und einen Token.
+
+ 2. Im Steuerpanel nach unten scrollen zur Karte "Terror Zone".
+
+ 3. Auf "Zugang (d2emu)" klicken - der Bereich klappt auf.
+
+ 4. Benutzername und Token eintragen, dann "Speichern & pruefen".
+
+Das Programm fragt sofort bei d2emu nach und sagt dir direkt, ob es geklappt
+hat. Steht danach rechts oben in dem Bereich "aktiv", laeuft es. Steht dort
+"Fehler", stimmt etwas mit den Daten nicht - die Meldung darunter sagt was.
+
+Eingetragen wird das nur einmal; das Programm merkt es sich. Ab dann holt es
+die aktuelle Zone von selbst, jeweils kurz nach :00 und :30.
+
+Mit den drei Knoepfen darueber ("Season" / "Non-Season" / "Aus") stellst du
+ein, ob und mit welcher Beschriftung die Zone im Overlay erscheint. Die Daten
+sind fuer Season und Non-Season identisch - es aendert sich nur der Text.
+
+
+5. Beenden
 ----------
 Am einfachsten im Steuerpanel oben rechts auf "Programm beenden".
 
@@ -65,21 +105,33 @@ Eintrag "node.exe". Den musst du aber nicht suchen, einer der beiden Wege oben
 beendet ihn sauber (und speichert vorher).
 
 
-5. Wo liegen meine Daten?
+6. Wo liegen meine Daten?
 -------------------------
         %APPDATA%\D2-Overlay
 
 (In den Explorer-Adresszeile einfuegen und Enter druecken.)
 
 Runs, Funde und Einstellungen bleiben dort erhalten - auch wenn du das
-Programm deinstallierst oder eine neuere Version installierst.
+Programm deinstallierst oder eine neuere Version installierst. Dort liegt
+auch dein d2emu-Zugang aus Schritt 4, du musst ihn also nicht neu eintragen.
+
+Weil der Zugang dort mit drinsteckt: gib diesen Ordner nicht weiter, wenn du
+jemandem deine Funde zeigen willst.
 
 
-6. Wenn etwas nicht geht
+7. Wenn etwas nicht geht
 ------------------------
 * Overlay bleibt in OBS schwarz/leer
   -> Laeuft das Programm? Startmenue -> "D2 Stream-Overlay" nochmal starten.
   -> In OBS Rechtsklick auf die Quelle -> "Aktualisieren".
+
+* Terror Zone bleibt leer
+  -> Zugang eingetragen? Siehe Schritt 4. Steht in der Karte "Terror Zone"
+     bei "Zugang (d2emu)" der Hinweis "nicht hinterlegt", fehlt er noch.
+  -> Steht dort "Fehler", sagt die Meldung darunter den Grund - meistens ein
+     vertippter Token.
+  -> Stehen die drei Knoepfe auf "Aus", wird sie im Overlay ausgeblendet,
+     auch wenn der Abruf laeuft.
 
 * "Diese Seite kann nicht erreicht werden" im Browser
   -> Das Programm laeuft nicht. Ueber das Startmenue starten.
