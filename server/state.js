@@ -63,6 +63,10 @@ function defaultState() {
     // nicht persistiert und beim Start neu geholt. Enthält Zonen-IDs; die Namen
     // löst das Frontend nach dataLang auf.
     terrorZone: null, // { currentIds: number[], nextIds: number[], updatedAt: number }
+    // Abrufzustand der Terror-Zone fürs Steuerpanel: ob Zugangsdaten vorliegen,
+    // woher sie stammen ('panel' | 'env' | 'none') und ob der letzte Abruf ging.
+    // Ebenfalls transient; ohne Username/Token (siehe setTerrorZoneStatus).
+    tzStatus: { configured: false, source: 'none', ok: null, error: null, checkedAt: null },
     // Wettbewerb-Timer: läuft von einer eingestellten Dauer herunter (z. B. „wer
     // findet in 2 h am meisten"). Unabhängig vom Farm-Timer (activeSince/paused)
     // und im Overlay als eigene Ebene über allem eingeblendet.
@@ -234,6 +238,8 @@ function withDefaults(loaded) {
     // terrorZone wird bewusst NICHT aus der Datei übernommen — ein persistierter
     // Wert wäre nach einem Neustart veraltet; der Abruf liefert ihn neu.
     terrorZone: null,
+    // Gilt genauso für den Abrufzustand — der wird beim Start neu ermittelt.
+    tzStatus: base.tzStatus,
     contest: normalizeContest(loaded.contest),
     // findsCount wird aus der DB neu bestimmt (siehe loadState), nicht persistiert.
     findsCount: 0,
@@ -325,6 +331,13 @@ function scheduleContestExpiry() {
 // gespeichert; der Aufrufer broadcastet den State selbst.
 export function setTerrorZone(tz) {
   state.terrorZone = tz;
+}
+
+// Setzt den Abrufzustand der Terror-Zone (konfiguriert? letzter Abruf erfolgreich?).
+// Ebenfalls transient. Enthält bewusst KEINE Zugangsdaten — der State geht per
+// WebSocket an alle Clients, auch an das Overlay in OBS.
+export function setTerrorZoneStatus(tzStatus) {
+  state.tzStatus = tzStatus;
 }
 
 // Schreibt den aktuellen State write-through in die DB (synchron, sofort dauerhaft).

@@ -10,7 +10,15 @@
     <div class="topbar">
       <h1 data-i18n="control.heading">D2R Overlay — Steuerung</h1>
       <div class="topbar-right">
-        <div class="status" id="status" data-state="connecting" data-i18n="status.connecting">verbinde…</div>
+        <!-- Kein data-i18n: der Text wechselt mit dem Verbindungszustand und würde
+             von applyTranslations() (läuft bei jeder State-Nachricht) sonst stur
+             auf „verbinde…" zurückgesetzt. Gesetzt wird er in renderStatus(). -->
+        <div class="status" id="status" data-state="connecting">verbinde…</div>
+        <!-- Zum Ansehen/Kontrollieren des Overlays. Neuer Tab, damit das Panel
+             offen bleibt — in OBS wird dieselbe URL als Browserquelle eingetragen. -->
+        <a class="btn ghost small" href="overlay.html" target="_blank" rel="noopener"
+           data-i18n="btn.openOverlay" data-i18n-title="title.openOverlay"
+           title="Overlay in neuem Tab öffnen — dieselbe URL wie für die OBS-Browserquelle">Overlay öffnen</a>
         <button class="btn ghost small quit-btn" id="quit" data-i18n="btn.quit">Programm beenden</button>
       </div>
     </div>
@@ -223,6 +231,51 @@
             <div class="tz-line"><span class="tz-k" data-i18n="tz.next">Nächste</span><span class="tz-v" id="tz-next">—</span></div>
           </div>
           <p class="hint" id="tz-hint" data-i18n="tz.hint">Online identisch für Season &amp; Non-Season — der Schalter wechselt nur die Beschriftung im Overlay.</p>
+
+          <!-- d2emu-Zugangsdaten. Eingeklappt, weil sie einmal gesetzt und dann
+               nie wieder angefasst werden — der Kopf zeigt den Zustand. -->
+          <details class="tz-creds" id="tz-creds">
+            <summary>
+              <span data-i18n="tz.creds">Zugang (d2emu)</span>
+              <span class="tz-cred-badge" id="tz-cred-badge" data-state="none">—</span>
+            </summary>
+
+            <div class="tz-cred-body">
+              <p class="hint" data-i18n="tz.credsHint">
+                Die Terror-Zone-Daten kommen von d2emu.com und brauchen einen kostenlosen
+                Zugang (Username + Token), den du über den d2emu-Discord anfragst.
+              </p>
+              <a class="tz-cred-link" href="https://www.d2emu.com/terms" target="_blank" rel="noopener"
+                 data-i18n="tz.credsLink">d2emu-Zugang anfragen</a>
+
+              <label class="tz-cred-field">
+                <span class="tz-cred-label" data-i18n="tz.username">Username</span>
+                <input type="text" id="tz-username" class="tz-cred-input" autocomplete="off" spellcheck="false" />
+              </label>
+
+              <label class="tz-cred-field">
+                <span class="tz-cred-label" data-i18n="tz.token">Token</span>
+                <!-- Platzhalter bewusst OHNE data-i18n-placeholder: er zeigt je nach
+                     Zustand entweder den Hinweistext oder die Maskierung eines bereits
+                     hinterlegten Tokens. Gesetzt wird er in renderTzCreds(). -->
+                <input type="password" id="tz-token" class="tz-cred-input"
+                       autocomplete="new-password" spellcheck="false"
+                       placeholder="Token einfügen" />
+              </label>
+
+              <label class="tz-cred-show">
+                <input type="checkbox" id="tz-token-show" />
+                <span data-i18n="tz.showToken">Token anzeigen</span>
+              </label>
+
+              <div class="tz-cred-actions">
+                <button class="btn small primary" id="tz-save" data-i18n="btn.saveAndTest">Speichern &amp; prüfen</button>
+                <button class="btn ghost small" id="tz-clear" data-i18n="btn.clear">Entfernen</button>
+              </div>
+
+              <p class="tz-cred-msg" id="tz-cred-msg" data-state="idle"></p>
+            </div>
+          </details>
         </section>
       </div>
     </main>

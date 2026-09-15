@@ -43,6 +43,14 @@ const el = {
   tzModes: document.getElementById('tz-modes'),
   tzNow: document.getElementById('tz-now'),
   tzNext: document.getElementById('tz-next'),
+  tzCreds: document.getElementById('tz-creds'),
+  tzCredBadge: document.getElementById('tz-cred-badge'),
+  tzUsername: document.getElementById('tz-username'),
+  tzToken: document.getElementById('tz-token'),
+  tzTokenShow: document.getElementById('tz-token-show'),
+  tzSave: document.getElementById('tz-save'),
+  tzClear: document.getElementById('tz-clear'),
+  tzCredMsg: document.getElementById('tz-cred-msg'),
   dataLang: document.getElementById('data-lang'),
   uiLang: document.getElementById('ui-lang'),
   findsLog: document.getElementById('finds-log'),
@@ -135,6 +143,21 @@ function liveFarmMs(id) {
 // Wird erst nach dem Laden der Stammdaten (loadData) verbunden, damit die erste
 // State-Nachricht nicht auf leere targets/items trifft.
 let client = null;
+let connStatus = 'connecting'; // gemerkt, damit renderStatus auch beim Sprachwechsel stimmt
+
+// Verbindungsanzeige oben rechts. Wird sowohl vom Client-Callback als auch nach
+// jedem Sprachwechsel aufgerufen.
+function renderStatus(status) {
+  if (status) connStatus = status;
+  el.status.dataset.state = connStatus;
+  el.status.textContent = t(
+    connStatus === 'connected'
+      ? 'status.connected'
+      : connStatus === 'connecting'
+        ? 'status.connecting'
+        : 'status.disconnected'
+  );
+}
 
 function connect() {
   client = createClient({
@@ -144,6 +167,7 @@ function connect() {
       dataLang = s.settings?.dataLang || 'de';
       setUiLang(s.settings?.uiLang || 'de');
       applyTranslations();
+      renderStatus();
       renderTargets();
       renderCounter();
       renderHistory();
@@ -161,16 +185,7 @@ function connect() {
         renderFinds();
       }
     },
-    onStatus: (status) => {
-      el.status.dataset.state = status;
-      el.status.textContent = t(
-        status === 'connected'
-          ? 'status.connected'
-          : status === 'connecting'
-            ? 'status.connecting'
-            : 'status.disconnected'
-      );
-    },
+    onStatus: renderStatus,
   });
 }
 
@@ -387,11 +402,141 @@ function renderTz() {
   const tz = state.terrorZone;
   el.tzNow.textContent = tz?.currentIds?.length ? tz.currentIds.map(zoneName).join(' · ') : '—';
   el.tzNext.textContent = tz?.nextIds?.length ? tz.nextIds.map(zoneName).join(' · ') : '—';
+  // Status kommt live aus dem State (der Abruf kann jederzeit fehlschlagen);
+  // Quelle/hasToken stammen aus dem letzten /api/tz-credentials-Abruf.
+  tzInfo.status = state.tzStatus || tzInfo.status;
+  renderTzCreds();
 }
 
 for (const chip of el.tzModes.querySelectorAll('.chip')) {
   chip.addEventListener('click', () => send({ type: 'SET_TZ_MODE', value: chip.dataset.mode }));
 }
+
+// --- d2emu-Zugangsdaten ---------------------------------------------------
+// Der Token wird nur GESCHICKT, nie zurückgeholt: /api/tz-credentials liefert
+// bloß Username, Quelle und ein hasToken-Flag. Das Token-Feld bleibt deshalb
+// nach dem Laden leer und zeigt nur eine Maskierung als Platzhalter.
+//
+// Gemerkt werden Zustand und Meldung als SCHLÜSSEL, nicht als fertiger Text:
+// renderTzCreds() läuft bei jedem State-Update (nach applyTranslations) erneut,
+// damit ein Sprachwechsel auch diese Karte mitnimmt.
+
+let tzInfo = { source: 'none', hasToken: false, status: null };
+let tzMsg = { key: null, mark: 'idle' }; // key === null → keine Meldung
+
+function setTzMsg(key, mark) {
+  tzMsg = { key: key || null, mark: mark || 'idle' };
+  renderTzCreds();
+}
+
+function renderTzCreds() {
+  const st = tzInfo.status || { configured: false, source: 'none', ok: null, error: null };
+
+  // Kurzstatus im Kopf der eingeklappten Sektion.
+  let badgeKey;
+  let mark;
+  if (!st.configured) {
+    badgeKey = 'tz.badge.none';
+    mark = 'none';
+  } else if (st.ok === false) {
+    badgeKey = 'tz.badge.error';
+    mark = 'error';
+  } else if (st.ok === true) {
+    badgeKey = st.source === 'env' ? 'tz.badge.env' : 'tz.badge.ok';
+    mark = 'ok';
+  } else {
+    badgeKey = 'tz.badge.unchecked';
+    mark = 'pending';
+  }
+  el.tzCredBadge.textContent = t(badgeKey);
+  el.tzCredBadge.dataset.state = mark;
+
+  el.tzToken.placeholder = tzInfo.hasToken ? '••••••••••' : t('tz.tokenPlaceholder');
+
+  // Ohne eigene Meldung: den Fehlergrund bzw. den Env-Hinweis zeigen.
+  let key = tzMsg.key;
+  let msgMark = tzMsg.mark;
+  if (!key) {
+    if (st.configured && st.ok === false) {
+      key = `tz.err.${st.error || 'http'}`;
+      msgMark = 'error';
+    } else if (tzInfo.source === 'env') {
+      key = 'tz.msg.envActive';
+      msgMark = 'info';
+    }
+  }
+  el.tzCredMsg.textContent = key ? t(key) : '';
+  el.tzCredMsg.dataset.state = key ? msgMark : 'idle';
+}
+
+// Übernimmt die Antwort der Zugangs-Endpoints und rendert neu.
+function applyTzInfo(info) {
+  if (!info) return;
+  tzInfo = {
+    source: info.source || 'none',
+    hasToken: !!info.hasToken,
+    status: info.status || null,
+  };
+  el.tzUsername.value = info.username || '';
+  el.tzToken.value = '';
+  renderTzCreds();
+}
+
+// Username und Quelle vom Server holen (einmal beim Start).
+async function loadTzCredentials() {
+  try {
+    applyTzInfo(await fetch('api/tz-credentials').then((r) => r.json()));
+  } catch {
+    /* Server nicht erreichbar — der Verbindungsstatus oben zeigt das bereits. */
+  }
+}
+
+el.tzTokenShow.addEventListener('change', (e) => {
+  el.tzToken.type = e.target.checked ? 'text' : 'password';
+});
+
+el.tzSave.addEventListener('click', async () => {
+  const username = el.tzUsername.value.trim();
+  const token = el.tzToken.value.trim();
+  if (!username || !token) return setTzMsg('tz.msg.missing', 'error');
+
+  el.tzSave.disabled = true;
+  el.tzClear.disabled = true;
+  setTzMsg('tz.msg.saving', 'busy');
+  try {
+    const res = await fetch('api/tz-credentials', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, token }),
+    }).then((r) => r.json());
+    applyTzInfo(res.info);
+    // Bei Misserfolg keine eigene Meldung setzen — renderTzCreds zeigt dann den
+    // Fehlergrund aus dem Status (z. B. „Token abgelehnt").
+    setTzMsg(res.ok ? 'tz.msg.saved' : null, 'ok');
+  } catch {
+    setTzMsg('tz.err.network', 'error');
+  } finally {
+    el.tzSave.disabled = false;
+    el.tzClear.disabled = false;
+  }
+});
+
+el.tzClear.addEventListener('click', async () => {
+  if (!confirm(t('confirm.clearTz'))) return;
+  el.tzSave.disabled = true;
+  el.tzClear.disabled = true;
+  try {
+    const res = await fetch('api/tz-credentials', { method: 'DELETE' }).then((r) => r.json());
+    applyTzInfo(res.info);
+    // Greifen danach die Env-Variablen, erklärt renderTzCreds das von selbst.
+    setTzMsg(res.info?.source === 'env' ? null : 'tz.msg.cleared', 'info');
+  } catch {
+    setTzMsg('tz.err.network', 'error');
+  } finally {
+    el.tzSave.disabled = false;
+    el.tzClear.disabled = false;
+  }
+});
 
 // --- Wettbewerb-Timer -----------------------------------------------------
 // Countdown für Wettbewerbe („wer findet in 2 h am meisten"). Der Server hält
@@ -780,4 +925,5 @@ applyTranslations(); // statische Defaults (Deutsch) sofort anwenden
 renderContestPresets();
 await loadData();
 renderPicker();
+await loadTzCredentials();
 connect();

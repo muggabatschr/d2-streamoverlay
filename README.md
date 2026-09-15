@@ -41,6 +41,10 @@ Danach läuft der Server auf `http://localhost:3777`:
 - **Steuerpanel:** http://localhost:3777/control.html
 - **Overlay (für OBS):** http://localhost:3777/overlay.html
 
+Im Steuerpanel führt oben rechts der Knopf **Overlay öffnen** in einem neuen Tab
+direkt aufs Overlay — praktisch zum Kontrollieren, wie es im Stream aussieht. Es
+ist dieselbe URL, die du in OBS als Browserquelle einträgst.
+
 Der Port lässt sich per Umgebungsvariable ändern: `PORT=4000 npm start`.
 
 ## Windows-Version fürs Verschenken
@@ -300,21 +304,42 @@ Overlay bzw. blendet die Anzeige aus. Standard ist `Aus`.
 
 ### Zugang (Token)
 
-Die d2emu-API verlangt einen kostenlosen **Username + Token** (anzufragen über den
-d2emu-Discord, siehe deren [Terms](https://www.d2emu.com/terms)). Beides wird über
-Umgebungsvariablen gesetzt:
+Die d2emu-API verlangt einen **Username + Token**. Kosten werden nirgends genannt;
+du fragst den Zugang über den d2emu-Discord an und gibst dabei an, wofür du ihn
+nutzt (siehe deren [Terms](https://www.d2emu.com/terms)).
+
+**Im Steuerpanel hinterlegen (empfohlen):** Unter *Terror Zone → Zugang (d2emu)*
+Username und Token eintragen und auf **Speichern & prüfen** klicken. Der Server
+ruft d2emu sofort testweise ab und meldet direkt zurück, ob die Daten akzeptiert
+wurden — ein Tippfehler fällt also sofort auf und nicht erst eine halbe Stunde
+später. Der Kurzstatus neben der Überschrift zeigt jederzeit, ob der Abruf läuft.
+
+Gespeichert wird in der SQLite-Datenbank, in einer **eigenen Tabelle `secrets`** —
+bewusst getrennt von den übrigen Einstellungen: der State wird per WebSocket an
+alle Clients gebroadcastet, auch an das Overlay in OBS. Dorthin gelangt der Token
+nicht. Auch `GET /api/tz-credentials` gibt ihn nie zurück, sondern nur den
+Username und die Information, *dass* ein Token hinterlegt ist.
+
+**Alternativ per Umgebungsvariable** (z. B. für Server-Setups):
 
 ```bash
 D2EMU_USERNAME="dein-name" D2EMU_TOKEN="dein-token" npm start
 ```
 
-Ohne diese Variablen bleibt die Terror-Zone-Anzeige einfach deaktiviert — der Rest
-des Overlays funktioniert normal weiter. Sollte d2emu andere Header-Namen vergeben,
-passt du sie in `server/terrorzone.js` an (Konstanten im `fetch`-Aufruf).
+Reihenfolge: Ein **im Panel hinterlegter Zugang hat Vorrang**; die Umgebungs-
+variablen greifen nur, solange dort nichts gespeichert ist. Klickst du im Panel
+auf *Entfernen*, fällt der Server wieder auf die Variablen zurück (falls gesetzt).
+Ohne beides bleibt die Terror-Zone-Anzeige einfach deaktiviert — der Rest des
+Overlays funktioniert normal weiter.
 
-> Hinweis: Die Zonen-IDs werden in `server/terrorzone.js` auf lesbare Namen
-> abgebildet. Taucht eine unbekannte ID auf, erscheint sie als „Zone &lt;id&gt;",
-> bis das Mapping ergänzt wird.
+Sollte d2emu andere Header-Namen vergeben, passt du sie in `server/terrorzone.js`
+an (im `fetch`-Aufruf).
+
+> Hinweis: Die Zonen-IDs werden über die Datenbank (Tabellen `zones`/`zone_i18n`,
+> geseedet aus `server/catalog-seed.js`) auf lesbare Namen abgebildet — der Server
+> broadcastet nur die IDs, übersetzt wird im Frontend nach Datensprache. Taucht
+> eine unbekannte ID auf, erscheint sie als „Zone &lt;id&gt;", bis das Mapping
+> ergänzt wird.
 
 ## Datenspeicherung
 

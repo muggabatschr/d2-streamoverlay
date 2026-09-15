@@ -7,14 +7,24 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
 import { WebSocketServer } from 'ws';
-import { loadState, getState, applyAction, setTerrorZone, setChangeNotifier } from './state.js';
-import { startTerrorZone } from './terrorzone.js';
+import {
+  loadState,
+  getState,
+  applyAction,
+  setTerrorZone,
+  setTerrorZoneStatus,
+  setChangeNotifier,
+} from './state.js';
+import { startTerrorZone, setCredentials, getCredentialInfo } from './terrorzone.js';
 import {
   closeDb,
   getItemsAllLangs,
   getTargetsAllLangs,
   getZonesAllLangs,
   getItemFinds,
+  getTzCredentials,
+  saveTzCredentials,
+  clearTzCredentials,
 } from './db.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -72,6 +82,38 @@ function handleHttpAction(req, res) {
 app.get('/api/action', handleHttpAction);
 app.post('/api/action', handleHttpAction);
 
+// --- d2emu-Zugangsdaten ---------------------------------------------------
+// Das Steuerpanel hinterlegt hier Username + Token für den Terror-Zone-Abruf.
+// Der Token verlässt den Server NIE wieder: GET liefert nur Username, Quelle und
+// die Information, dass ein Token gesetzt ist. Deshalb eigene Endpoints statt
+// einer Aktion über den WebSocket — der broadcastet an alle Clients.
+//
+// Hinweis: ungeschützt wie der Rest der Schnittstelle — gedacht für localhost.
+
+app.get('/api/tz-credentials', (_req, res) => res.json(getCredentialInfo()));
+
+// Speichern + sofort gegen d2emu prüfen, damit das Panel gleich sagen kann, ob
+// die Daten akzeptiert wurden (statt bis zum nächsten :00/:30 im Dunkeln zu sein).
+app.post('/api/tz-credentials', async (req, res) => {
+  const username = typeof req.body?.username === 'string' ? req.body.username.trim() : '';
+  const token = typeof req.body?.token === 'string' ? req.body.token.trim() : '';
+  if (!username || !token) {
+    return res.status(400).json({ ok: false, error: 'missing' });
+  }
+  saveTzCredentials({ username, token });
+  const status = await setCredentials({ username, token });
+  broadcastState();
+  res.json({ ok: status.ok === true, info: getCredentialInfo() });
+});
+
+// Löschen — danach greift wieder der Env-Fallback (oder das Feature ist aus).
+app.delete('/api/tz-credentials', async (_req, res) => {
+  clearTzCredentials();
+  await setCredentials(null);
+  broadcastState();
+  res.json({ ok: true, info: getCredentialInfo() });
+});
+
 // Server beenden. Nötig für die Windows-Variante: dort startet das Overlay über
 // eine Verknüpfung ohne Fenster, es gibt also nichts zum Schließen — im
 // Task-Manager steht nur ein node-Prozess. Das Steuerpanel bekommt dafür einen
@@ -116,10 +158,18 @@ wss.on('connection', (ws) => {
 });
 
 // Terror-Zone-Abruf starten: jede Aktualisierung in den State schreiben und an
-// alle Clients broadcasten (läuft nur mit gesetztem D2EMU_USERNAME/D2EMU_TOKEN).
-startTerrorZone((tz) => {
-  setTerrorZone(tz);
-  broadcastState();
+// alle Clients broadcasten. Zugangsdaten zuerst aus der DB (im Steuerpanel
+// hinterlegt), sonst aus D2EMU_USERNAME/D2EMU_TOKEN; ohne beides bleibt es aus.
+startTerrorZone({
+  credentials: getTzCredentials(),
+  onUpdate: (tz) => {
+    setTerrorZone(tz);
+    broadcastState();
+  },
+  onStatus: (tzStatus) => {
+    setTerrorZoneStatus(tzStatus);
+    broadcastState();
+  },
 });
 
 server.listen(PORT, () => {

@@ -26,7 +26,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = process.env.D2_DATA_DIR || join(__dirname, 'data');
 const DB_FILE = join(DATA_DIR, 'state.db');
 
-const SCHEMA_VERSION = 6;
+const SCHEMA_VERSION = 7;
 // Version des Katalog-Seeds (Items/Targets/Zonen + Übersetzungen). Beim Erhöhen
 // wird der Katalog beim nächsten Start neu aus den Seed-Dateien eingespielt.
 const CATALOG_SEED_VERSION = 5;
@@ -101,6 +101,16 @@ export function openDb() {
       ts       INTEGER NOT NULL
     );
     CREATE TABLE IF NOT EXISTS settings (
+      key   TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
+
+    -- Zugangsdaten (aktuell nur d2emu-Username/Token). BEWUSST getrennt von
+    -- settings: settings wird komplett in den State geladen und per WebSocket an
+    -- ALLE Clients gebroadcastet — auch an das Overlay, das in OBS als Browser-
+    -- quelle läuft. Ein Token hat dort nichts verloren. Diese Tabelle wird nur
+    -- gezielt gelesen (siehe getSecret) und verlässt den Server nie.
+    CREATE TABLE IF NOT EXISTS secrets (
       key   TEXT PRIMARY KEY,
       value TEXT NOT NULL
     );
@@ -183,6 +193,11 @@ export function openDb() {
       'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value'
     ),
     allSettings: db.prepare('SELECT key, value FROM settings'),
+    getSecret: db.prepare('SELECT value FROM secrets WHERE key = ?'),
+    setSecret: db.prepare(
+      'INSERT INTO secrets (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value'
+    ),
+    delSecret: db.prepare('DELETE FROM secrets WHERE key = ?'),
     delRunDays: db.prepare('DELETE FROM run_days'),
     delRuns: db.prepare('DELETE FROM runs'),
     insRun: db.prepare(
@@ -452,6 +467,34 @@ function getMetaValue(key) {
 
 function setMetaValue(key, value) {
   stmt.setMeta.run(key, JSON.stringify(value));
+}
+
+// --- Zugangsdaten ---------------------------------------------------------
+// Nur diese drei Funktionen fassen die secrets-Tabelle an. Sie werden ausschließlich
+// von index.js aufgerufen und liefern nie etwas in den broadcasteten State.
+
+// Liest die gespeicherten d2emu-Zugangsdaten. Gibt null zurück, wenn (noch) keine
+// hinterlegt sind — dann greift der Umgebungsvariablen-Fallback in terrorzone.js.
+export function getTzCredentials() {
+  const row = stmt.getSecret.get('d2emu');
+  if (!row || row.value == null) return null;
+  try {
+    const creds = JSON.parse(row.value);
+    if (!creds || !creds.username || !creds.token) return null;
+    return { username: String(creds.username), token: String(creds.token) };
+  } catch {
+    return null;
+  }
+}
+
+// Speichert Username + Token. Beide müssen nicht-leer sein.
+export function saveTzCredentials({ username, token }) {
+  stmt.setSecret.run('d2emu', JSON.stringify({ username, token }));
+}
+
+// Entfernt die gespeicherten Zugangsdaten wieder (zurück zum Env-Fallback bzw. aus).
+export function clearTzCredentials() {
+  stmt.delSecret.run('d2emu');
 }
 
 // True, wenn noch keine Nutzdaten vorliegen (frische DB) — Grundlage für den

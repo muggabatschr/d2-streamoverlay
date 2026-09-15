@@ -493,6 +493,135 @@ kbd {
   color: var(--gold-bright);
 }
 
+/* d2emu-Zugangsdaten in der Terror-Zone-Karte. Eingeklappt (details/summary),
+   weil das einmal gesetzt und dann nie wieder angefasst wird — der Kopf trägt
+   den Kurzstatus, damit man auch zugeklappt sieht, ob der Abruf läuft. */
+.tz-creds {
+  margin-top: 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+.tz-creds > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.tz-creds > summary::-webkit-details-marker {
+  display: none;
+}
+.tz-creds > summary:hover {
+  color: var(--text);
+}
+.tz-cred-badge {
+  font-size: 11px;
+  letter-spacing: 0;
+  text-transform: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #15110b;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.tz-cred-badge[data-state='ok'] {
+  color: var(--q-set);
+  border-color: rgba(0, 255, 0, 0.4);
+}
+.tz-cred-badge[data-state='error'] {
+  color: #ff7b6b;
+  border-color: rgba(255, 123, 107, 0.45);
+}
+.tz-cred-badge[data-state='pending'] {
+  color: var(--gold-bright);
+  border-color: var(--border-strong);
+}
+.tz-cred-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+.tz-cred-link {
+  color: var(--gold);
+  font-size: 12px;
+  text-decoration: none;
+  border-bottom: 1px dotted var(--border-strong);
+  align-self: flex-start;
+}
+.tz-cred-link:hover {
+  color: var(--gold-bright);
+}
+.tz-cred-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.tz-cred-label {
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.tz-cred-input {
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #15110b;
+  color: var(--text);
+  font-size: 14px;
+}
+.tz-cred-input:focus {
+  outline: none;
+  border-color: var(--border-strong);
+}
+.tz-cred-show {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.tz-cred-show input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--gold);
+}
+.tz-cred-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+/* Rückmeldung zum Speichern/Prüfen. Ohne Text bleibt der Absatz unsichtbar und
+   nimmt keinen Platz weg — sonst klappte die Karte bei jeder Meldung um. */
+.tz-cred-msg {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.tz-cred-msg[data-state='idle']:empty {
+  display: none;
+}
+.tz-cred-msg[data-state='ok'] {
+  color: var(--q-set);
+}
+.tz-cred-msg[data-state='error'] {
+  color: #ff7b6b;
+}
+.tz-cred-msg[data-state='busy'] {
+  color: var(--gold-bright);
+}
+
 /* Ausgeblendete Bereiche. Fehlte bisher ganz — der Variant-Dialog trug zwar die
    Klasse, blieb aber als leerer 22-px-Kasten stehen. */
 .hidden {
